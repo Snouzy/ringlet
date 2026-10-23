@@ -3,22 +3,48 @@ import RingletCore
 import ServiceManagement
 import SwiftUI
 
-/// Fenêtre des réglages : Général, Apparence, Déclencheurs, Actions, Autorisations.
-struct SettingsView: View {
-    @Bindable var prefs: Preferences
-    let hotKeyRegistered: () -> Bool
-    var onRecordingShortcut: (Bool) -> Void = { _ in }
+/// Fenêtre des réglages à la manière de macOS (Safari, Mail…) : une rubrique par icône dans la barre d'outils,
+/// le titre suit la rubrique et la fenêtre prend la hauteur de chacune.
+enum SettingsWindow {
+    static let width: CGFloat = 560
 
-    var body: some View {
-        TabView {
-            GeneralTab(prefs: prefs).tabItem { Label("Général", systemImage: "circle.dashed") }
-            AppearanceTab(prefs: prefs).tabItem { Label("Apparence", systemImage: "paintpalette") }
-            TriggersTab(prefs: prefs, hotKeyRegistered: hotKeyRegistered, onRecordingShortcut: onRecordingShortcut)
-                .tabItem { Label("Déclencheurs", systemImage: "cursorarrow.click.2") }
-            ActionsTab(prefs: prefs).tabItem { Label("Actions", systemImage: "circle.grid.cross") }
-            PermissionsTab().tabItem { Label("Autorisations", systemImage: "lock.shield") }
+    /// Rubriques, dans l'ordre de la barre d'outils.
+    static let sections: [(title: String, symbol: String)] = [
+        ("Général", "gearshape"),
+        ("Apparence", "paintpalette"),
+        ("Déclencheurs", "cursorarrow.click.2"),
+        ("Actions", "circle.grid.cross"),
+        ("Autorisations", "lock.shield"),
+    ]
+
+    @MainActor static func make(prefs: Preferences, hotKeyRegistered: @escaping () -> Bool,
+                                onRecordingShortcut: @escaping (Bool) -> Void) -> NSWindow {
+        let tabs = NSTabViewController()
+        tabs.tabStyle = .toolbar
+        tabs.canPropagateSelectedChildViewControllerTitle = true
+        let views: [AnyView] = [
+            AnyView(GeneralTab(prefs: prefs)),
+            AnyView(AppearanceTab(prefs: prefs)),
+            AnyView(TriggersTab(prefs: prefs, hotKeyRegistered: hotKeyRegistered, onRecordingShortcut: onRecordingShortcut)),
+            AnyView(ActionsTab(prefs: prefs)),
+            AnyView(PermissionsTab()),
+        ]
+        for (section, view) in zip(sections, views) {
+            // Chaque rubrique prend la hauteur de son contenu ; la fenêtre suit quand on change de rubrique.
+            let host = NSHostingController(rootView: view.scrollDisabled(true).fixedSize(horizontal: false, vertical: true)
+                .frame(width: width))
+            host.sizingOptions = [.preferredContentSize]
+            host.title = section.title
+            let item = NSTabViewItem(viewController: host)
+            item.label = section.title
+            item.image = NSImage(systemSymbolName: section.symbol, accessibilityDescription: section.title)
+            tabs.addTabViewItem(item)
         }
-        .frame(width: 640, height: 430)
+        let window = NSWindow(contentViewController: tabs)
+        window.styleMask = [.titled, .closable]
+        window.toolbarStyle = .preference
+        window.isReleasedWhenClosed = false
+        return window
     }
 }
 
@@ -68,9 +94,12 @@ struct AppearanceTab: View {
                                                terminal: "Terminal", editor: "VS Code", canGoUp: true)
 
     var body: some View {
-        HStack(spacing: 0) {
-            preview.frame(width: 320)
-            Divider()
+        VStack(spacing: 0) {
+            preview
+                .frame(height: 320)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Color.primary.opacity(0.1), lineWidth: 0.5))
+                .padding([.horizontal, .top], 20)
             Form {
                 Section("Anneau") {
                     Picker("Style", selection: $prefs.ringStyle) {

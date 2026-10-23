@@ -73,16 +73,12 @@ struct RingletApp: App {
 
     func showSettings() {
         if settingsWindow == nil {
-            let view = SettingsView(prefs: prefs, hotKeyRegistered: { [weak self] in self?.hotKeyRegistered ?? false },
-                                    onRecordingShortcut: { [weak self] recording in
+            let window = SettingsWindow.make(prefs: prefs, hotKeyRegistered: { [weak self] in self?.hotKeyRegistered ?? false },
+                                             onRecordingShortcut: { [weak self] recording in
                 // Pendant l'enregistrement, le raccourci actuel doit arriver jusqu'au champ.
                 guard let self else { return }
                 if recording { self.hotKey.unregister() } else { self.apply() }
             })
-            let window = NSWindow(contentViewController: NSHostingController(rootView: view))
-            window.title = "Réglages de Ringlet"
-            window.styleMask = [.titled, .closable]
-            window.isReleasedWhenClosed = false
             window.center()
             settingsWindow = window
         }

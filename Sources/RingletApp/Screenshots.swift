@@ -22,7 +22,7 @@ import SwiftUI
         render(Scene(dark: false, look: RingLook(style: .glass), actions: folderActions, hot: 0, selected: nil),
                size: CGSize(width: 1280, height: 760), dark: false, to: dir.appendingPathComponent("folder.png"))
         let prefs = Preferences(defaults: UserDefaults(suiteName: "io.snouzy.ringlet.screenshots") ?? .standard)
-        render(SettingsShot(prefs: prefs), size: CGSize(width: 640, height: 470), dark: true,
+        render(SettingsShot(prefs: prefs), size: CGSize(width: SettingsWindow.width, height: 748), dark: true,
                to: dir.appendingPathComponent("settings.png"))
         exit(0)
     }
@@ -89,24 +89,48 @@ private struct StylesBoard: View {
     }
 }
 
-/// L'onglet Apparence dans un cadre de fenêtre.
+/// La rubrique Apparence sous une barre d'outils dessinée comme celle de la vraie fenêtre (la barre d'outils
+/// d'AppKit ne passe pas dans un rendu hors écran).
 private struct SettingsShot: View {
     var prefs: Preferences
 
     var body: some View {
         VStack(spacing: 0) {
-            ZStack {
-                Text("Réglages de Ringlet").font(.system(size: 13, weight: .semibold))
-                HStack(spacing: 8) {
-                    ForEach([Color(red: 1, green: 0.37, blue: 0.34), Color(red: 1, green: 0.74, blue: 0.18), Color(red: 0.16, green: 0.78, blue: 0.25)], id: \.self) {
-                        Circle().fill($0).frame(width: 12, height: 12)
+            VStack(spacing: 6) {
+                ZStack {
+                    Text("Apparence").font(.system(size: 13, weight: .semibold))
+                    HStack(spacing: 8) {
+                        ForEach([Color(red: 1, green: 0.37, blue: 0.34), Color(red: 1, green: 0.74, blue: 0.18), Color(red: 0.16, green: 0.78, blue: 0.25)], id: \.self) {
+                            Circle().fill($0).frame(width: 12, height: 12)
+                        }
+                        Spacer()
                     }
-                    Spacer()
+                    .padding(.leading, 14)
                 }
-                .padding(.leading, 14)
+                .frame(height: 28)
+                HStack(spacing: 4) {
+                    ForEach(SettingsWindow.sections, id: \.title) { section in
+                        let isOn = section.title == "Apparence"
+                        VStack(spacing: 3) {
+                            Image(systemName: section.symbol).font(.system(size: 18))
+                            Text(section.title).font(.system(size: 11))
+                        }
+                        .foregroundStyle(isOn ? Color.accentColor : .secondary)
+                        .frame(minWidth: 70)
+                        .padding(.vertical, 5)
+                        .background(isOn ? Color.primary.opacity(0.08) : .clear, in: RoundedRectangle(cornerRadius: 7))
+                    }
+                }
             }
-            .frame(height: 40)
+            .padding(.top, 6)
+            .padding(.bottom, 8)
+            .frame(maxWidth: .infinity)
+            .background(.bar)
+            .overlay(alignment: .bottom) { Divider() }
             AppearanceTab(prefs: prefs, hot: 1)
+                .scrollDisabled(true)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
         }
         .background(Color(nsColor: .windowBackgroundColor))
     }
