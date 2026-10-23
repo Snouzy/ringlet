@@ -1,0 +1,488 @@
+<title>Anneau de fichiers</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout : intro courte, grille 2×2 de fenêtres Finder (une version du camembert chacune, mêmes fichiers), réglages partagés collés en bas. */
+:root {
+  --bg: #eceef3; --fg: #1b1f2a; --muted: #5b6273; --line: #d3d7e0;
+  --win: #ffffff; --win-bar: #f1f2f5; --sel: #2f6fea; --sel-soft: rgba(47,111,234,.14);
+  --ring-bg: rgba(248,249,252,.88); --ring-fg: #1b1f2a; --ring-line: rgba(20,30,50,.14); --ring-faint: rgba(20,30,50,.06);
+  --hot: #2f6fea; --hot-fg: #ffffff;
+  --ok: #1d7f47; --shadow: 0 18px 48px rgba(20,30,60,.24); --panel: rgba(250,251,253,.92);
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Bricolage Grotesque", -apple-system, "Helvetica Neue", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121419; --fg: #e9ebf1; --muted: #9aa1b3; --line: #2a2e38;
+  --win: #1d2028; --win-bar: #252932; --sel: #4d87f6; --sel-soft: rgba(77,135,246,.24);
+  --ring-bg: rgba(34,37,46,.88); --ring-fg: #eef0f5; --ring-line: rgba(255,255,255,.13); --ring-faint: rgba(255,255,255,.05);
+  --hot: #4d87f6; --hot-fg: #ffffff;
+  --ok: #52c784; --shadow: 0 18px 48px rgba(0,0,0,.6); --panel: rgba(26,28,35,.92); color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #121419; --fg: #e9ebf1; --muted: #9aa1b3; --line: #2a2e38;
+  --win: #1d2028; --win-bar: #252932; --sel: #4d87f6; --sel-soft: rgba(77,135,246,.24);
+  --ring-bg: rgba(34,37,46,.88); --ring-fg: #eef0f5; --ring-line: rgba(255,255,255,.13); --ring-faint: rgba(255,255,255,.05);
+  --hot: #4d87f6; --hot-fg: #ffffff;
+  --ok: #52c784; --shadow: 0 18px 48px rgba(0,0,0,.6); --panel: rgba(26,28,35,.92); color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-ui); margin: 0; }
+.page { max-width: 1120px; margin: 0 auto; padding-block: 28px 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1 { font-family: var(--font-display); font-weight: 600; font-size: 1.9rem; letter-spacing: -.01em; margin: 0 0 6px; text-wrap: balance; }
+.intro { color: var(--muted); max-width: 70ch; line-height: 1.5; margin: 0 0 22px; }
+kbd { font-family: var(--font-mono); font-size: .8em; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--win); color: var(--fg); }
+
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+@media (max-width: 820px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.cell { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.cell-head { display: flex; gap: 10px; align-items: baseline; }
+.tag { font-family: var(--font-mono); font-weight: 700; font-size: .78rem; color: var(--hot-fg); background: var(--hot); border-radius: 5px; padding: 2px 6px; flex: none; }
+.cell-head h2 { font-size: 1rem; margin: 0; font-weight: 650; }
+.cell-desc { color: var(--muted); font-size: .86rem; line-height: 1.45; margin: 0; min-height: 2.9em; }
+
+.win { position: relative; height: 340px; background: var(--win); border: 1px solid var(--line); border-radius: 11px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.06); outline: none; user-select: none; -webkit-user-select: none; touch-action: none; }
+.win:focus-visible { box-shadow: 0 0 0 3px var(--sel-soft); }
+.bar { height: 34px; display: flex; align-items: center; gap: 7px; padding: 0 12px; background: var(--win-bar);
+  border-bottom: 1px solid var(--line); border-radius: 11px 11px 0 0; font-size: .8rem; font-weight: 600; color: var(--muted); }
+.bar i { width: 11px; height: 11px; border-radius: 50%; background: var(--line); display: block; }
+.bar span { margin-left: 10px; }
+.files { position: absolute; inset: 34px 0 0; padding: 14px; overflow-y: auto; display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); align-content: start; gap: 10px 6px; }
+.file { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 6px 2px; border-radius: 8px; cursor: default; }
+.file .name { font-size: .72rem; line-height: 1.25; text-align: center; word-break: break-all; padding: 1px 5px; border-radius: 4px; max-width: 100%; }
+.file .size { font-size: .66rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.file.sel .thumb { box-shadow: 0 0 0 3px var(--sel-soft); }
+.file.sel .name { background: var(--sel); color: #fff; }
+.file.fresh { animation: fresh 1.4s ease-out; }
+@keyframes fresh { 0% { background: var(--sel-soft); transform: scale(.85); } 30% { transform: scale(1); } 100% { background: transparent; } }
+
+.thumb { width: 52px; height: 52px; border-radius: 6px; position: relative; overflow: hidden; flex: none; }
+.thumb b { position: absolute; right: 2px; bottom: 2px; font: 700 8px/1 var(--font-mono); background: rgba(0,0,0,.62); color: #fff; padding: 2px 3px; border-radius: 3px; }
+.t-photo-a { background: radial-gradient(circle at 70% 30%, #ffd98a 0 9%, transparent 10%), linear-gradient(180deg, #7fb4e8 0 52%, #3f7a4f 53% 100%); }
+.t-photo-b { background: radial-gradient(circle at 30% 35%, #fff1c4 0 8%, transparent 9%), linear-gradient(180deg, #e7a07a 0 45%, #6c5a8e 46% 100%); }
+.t-photo-c { background: linear-gradient(135deg, #222 0 40%, #f4c430 41% 60%, #222 61%); }
+.t-doc { background: #fbfbfb; border: 1px solid #d8d8d8; width: 42px; margin: 0 5px; }
+.t-doc::before { content: ""; position: absolute; inset: 9px 7px auto; height: 22px; background: repeating-linear-gradient(180deg, #c9ccd3 0 2px, transparent 2px 5px); }
+.t-video { background: linear-gradient(160deg, #303544, #151821); }
+.t-video::before { content: ""; position: absolute; left: 20px; top: 16px; border: 10px solid transparent; border-left: 15px solid #fff; border-right: 0; }
+.t-audio { background: linear-gradient(160deg, #b2457d, #6b2a9b); }
+.t-audio::before { content: ""; position: absolute; inset: 18px 10px; background: repeating-linear-gradient(90deg, #fff 0 3px, transparent 3px 6px); clip-path: polygon(0 40%, 15% 10%, 30% 55%, 45% 0, 60% 45%, 75% 15%, 100% 50%, 100% 100%, 0 100%); }
+
+/* Camembert : SVG centré sur (0,0), un <g> par secteur (forme + texte) qui grandit depuis le centre. */
+.ring { position: absolute; width: 0; height: 0; z-index: 40; pointer-events: none; }
+.ring svg, .ring .hub, .ring .caption { position: absolute; left: 0; top: 0; }
+.ring svg { overflow: visible; transform: translate(-50%, -50%); filter: drop-shadow(0 14px 30px rgba(0,0,0,.25)); }
+.ring g.seg { transform-box: view-box; transform-origin: 0 0; transform: scale(var(--s, .5)); opacity: 0; }
+.ring.open g.seg { --s: 1; opacity: 1; }
+.ring.open.has-hot g.seg.dim { opacity: var(--dim, 1); }
+.ring.open g.seg.hot { --s: var(--grow, 1); }
+.ring path.shape { fill: var(--ring-bg); stroke: var(--ring-line); stroke-width: 1; transition: fill .09s; }
+.ring g.hot path.shape { fill: var(--hot); }
+.ring.ghost path.shape { fill: var(--ring-faint); }
+.ring.ghost g.hot path.shape { fill: var(--ring-bg); }
+.ring path.edge { fill: var(--hot); opacity: 0; transition: opacity .09s; }
+.ring g.hot path.edge { opacity: 1; }
+.ring text { fill: var(--ring-fg); font: 700 12px var(--font-mono); text-anchor: middle; dominant-baseline: central; }
+.ring text.long { font: 600 10.5px var(--font-ui); }
+.ring g.hot text { fill: var(--hot-fg); }
+.ring.ghost g.hot text { fill: var(--hot); }
+.ring circle.core { fill: var(--ring-bg); stroke: var(--ring-line); opacity: 0; transition: opacity var(--dur); }
+.ring.open circle.core { opacity: 1; }
+.ring g.needle { transform-box: view-box; transform-origin: 0 0; opacity: 0; transition: opacity .12s; }
+.ring.open g.needle { opacity: .35; }
+.ring.open.has-hot g.needle { opacity: 1; }
+.ring g.needle line { stroke: var(--hot); stroke-width: 3; stroke-linecap: round; }
+.ring g.needle circle { fill: var(--hot); }
+.ring .hub { transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  text-align: center; border-radius: 50%; color: var(--ring-fg); font-size: 11px; font-weight: 600; line-height: 1.2; padding: 6px;
+  opacity: 0; transition: opacity var(--dur) ease; }
+.ring.open .hub { opacity: 1; }
+.hub .est { font: 500 9.5px/1.2 var(--font-mono); color: var(--muted); }
+.hub .thumb { width: 34px; height: 34px; }
+.hub .thumb.t-doc { width: 27px; margin: 0; }
+.ring .caption { transform: translate(-50%, 0); white-space: nowrap; font-size: 12px; font-weight: 600; color: var(--ring-fg);
+  background: var(--ring-bg); border: 1px solid var(--ring-line); border-radius: 6px; padding: 4px 8px; opacity: 0; transition: opacity .1s; }
+.ring.open .caption.show { opacity: 1; }
+
+.toast { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 45; white-space: nowrap; font-size: .78rem; font-weight: 600;
+  background: var(--fg); color: var(--win); border-radius: 8px; padding: 7px 11px; box-shadow: var(--shadow); max-width: calc(100% - 24px); overflow: hidden; text-overflow: ellipsis; }
+.toast .ok { color: var(--ok); filter: brightness(1.4); margin-right: 5px; }
+
+.panel { position: sticky; bottom: 0; margin-top: 26px; z-index: 60; background: var(--panel); border-top: 1px solid var(--line);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  padding-block: 12px calc(12px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.controls { max-width: 1120px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; }
+.ctl { display: flex; align-items: center; gap: 8px; font-size: .8rem; color: var(--muted); }
+.ctl input[type=range] { width: 110px; accent-color: var(--hot); }
+.ctl output { font: 500 .76rem var(--font-mono); color: var(--fg); min-width: 46px; font-variant-numeric: tabular-nums; }
+.ctl select, .panel button { font: inherit; font-size: .8rem; color: var(--fg); background: var(--win); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; }
+.panel button { cursor: pointer; margin-left: auto; }
+.panel button:focus-visible, .ctl select:focus-visible, .ctl input:focus-visible { outline: 2px solid var(--hot); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .ring *, .file.fresh { transition-duration: 1ms !important; animation: none !important; } }
+</style>
+
+<div class="page">
+  <h1>Anneau de fichiers</h1>
+  <p class="intro">Quatre versions du camembert (R2), les mêmes fichiers. <strong>Clic droit sur un fichier</strong> (ou survole une fenêtre et maintiens <kbd>R</kbd>), pars dans une direction et relâche. Un relâché sans bouger laisse l'anneau ouvert : clique alors l'action. <kbd>Échap</kbd> ferme. Le PDF, la vidéo et le PNG ont leurs propres actions.</p>
+  <div class="grid" id="grid"></div>
+</div>
+
+<div class="panel">
+  <div class="controls">
+    <label class="ctl" for="p-radius">Rayon <input id="p-radius" type="range" min="56" max="130" step="1"><output id="o-radius"></output></label>
+    <label class="ctl" for="p-dur">Ouverture <input id="p-dur" type="range" min="40" max="500" step="10"><output id="o-dur"></output></label>
+    <label class="ctl" for="p-stagger">Décalage <input id="p-stagger" type="range" min="0" max="50" step="2"><output id="o-stagger"></output></label>
+    <label class="ctl" for="p-dead">Zone morte <input id="p-dead" type="range" min="6" max="44" step="1"><output id="o-dead"></output></label>
+    <label class="ctl" for="p-count">Actions <input id="p-count" type="range" min="2" max="6" step="1"><output id="o-count"></output></label>
+    <label class="ctl" for="p-mode">Choix
+      <select id="p-mode"><option value="release">au relâché</option><option value="click">au clic seulement</option></select></label>
+    <button id="reset" type="button">Réinitialiser</button>
+  </div>
+</div>
+
+<script>
+const DEFAULTS = { radius: 84, dur: 180, stagger: 14, dead: 16, count: 4, mode: 'release' };
+const P = { ...DEFAULTS };
+
+// Chaque version ne change que la forme du camembert ; le geste et les actions sont identiques.
+// inner : rayon intérieur (fonction du rayon) ; center : rien, ou aperçu du fichier ; grow : agrandissement du secteur visé ;
+// dim : opacité des autres secteurs ; needle : aiguille qui suit la souris ; ghost : secteurs presque transparents, liseré au bord.
+const VARIANTS = [
+  { id: 'R2a', name: 'Camembert de base', inner: r => Math.max(P.dead + 6, 24), center: 'none', grow: 1, dim: 1, labels: 'short',
+    desc: "La version d'avant : secteurs pleins jusqu'au centre, libellé dans une étiquette sous l'anneau." },
+  { id: 'R2b', name: 'Donut et aperçu', inner: r => r - 14, center: 'preview', grow: 1, dim: 1, labels: 'short',
+    desc: "Anneau plus fin. Le centre montre le fichier, l'action visée et le poids estimé du résultat. Le mélange R2 + R4." },
+  { id: 'R2c', name: 'Secteur qui sort', inner: r => Math.max(P.dead + 6, 24), center: 'none', grow: 1.13, dim: .55, labels: 'long',
+    desc: "Le secteur visé grandit et passe devant, les autres s'estompent. Libellés écrits en entier dans les secteurs." },
+  { id: 'R2d', name: 'Aiguille', inner: r => r - 10, center: 'none', grow: 1, dim: 1, needle: true, ghost: true, labels: 'short',
+    desc: "Secteurs presque transparents, une aiguille suit la souris dès le centre. Le plus léger à l'écran, la direction se voit avant d'atteindre l'anneau." },
+];
+
+const ACTIONS = {
+  heic: [
+    { k: 'JPG', label: 'Convertir en JPG', ext: 'jpg', ratio: .55 },
+    { k: 'PNG', label: 'Convertir en PNG', ext: 'png', ratio: 2.6 },
+    { k: '2048', label: 'JPG réduit à 2048 px', ext: 'jpg', suffix: '-2048', ratio: .22 },
+    { k: 'GPS', label: 'Copie sans position GPS', ext: 'heic', suffix: '-sans-gps', ratio: 1 },
+    { k: '⧉', label: 'Copier en JPG', clip: true },
+    { k: '↗', label: 'Partager en JPG', share: true },
+  ],
+  png: [
+    { k: 'JPG', label: 'Convertir en JPG', ext: 'jpg', ratio: .3 },
+    { k: 'HEIC', label: 'Convertir en HEIC', ext: 'heic', ratio: .18 },
+    { k: '½', label: 'Réduire de moitié', ext: 'png', suffix: '-50', ratio: .3 },
+    { k: '⧉', label: 'Copier', clip: true },
+    { k: 'ICO', label: "Icône d'app (.icns)", ext: 'icns', ratio: 1.8 },
+    { k: '↗', label: 'Partager', share: true },
+  ],
+  pdf: [
+    { k: '↓', label: 'Compresser le PDF', ext: 'pdf', suffix: '-compresse', ratio: .35 },
+    { k: 'PNG', label: 'Page 1 en PNG', ext: 'png', suffix: '-p1', ratio: .5 },
+    { k: 'TXT', label: 'Extraire le texte', ext: 'txt', ratio: .02 },
+    { k: 'IMG', label: 'Extraire les images', ext: 'zip', suffix: '-images', ratio: .7 },
+    { k: '⧉', label: 'Copier le texte', clip: true },
+    { k: '↗', label: 'Partager', share: true },
+  ],
+  mov: [
+    { k: 'MP4', label: 'Convertir en MP4', ext: 'mp4', ratio: .55 },
+    { k: 'GIF', label: 'GIF animé', ext: 'gif', ratio: .3 },
+    { k: 'M4A', label: "Extraire l'audio", ext: 'm4a', ratio: .06 },
+    { k: '720', label: 'Réduire en 720p', ext: 'mov', suffix: '-720p', ratio: .32 },
+    { k: 'IMG', label: 'Image de la 1re seconde', ext: 'jpg', suffix: '-image', ratio: .01 },
+    { k: '↗', label: 'Partager', share: true },
+  ],
+};
+const TYPE_OF = { heic: 'heic', jpg: 'png', png: 'png', pdf: 'pdf', mov: 'mov', mp4: 'mov' };
+
+const FILES = [
+  { name: 'IMG_2041.HEIC', bytes: 3.4e6, hue: 'a' },
+  { name: 'IMG_2057.HEIC', bytes: 2.9e6, hue: 'b' },
+  { name: 'facture-octobre.pdf', bytes: 1.2e6 },
+  { name: 'demo-portwatch.mov', bytes: 48e6 },
+  { name: 'logo.png', bytes: .42e6, hue: 'c' },
+];
+
+const ext = n => n.split('.').pop().toLowerCase();
+const base = n => n.slice(0, n.lastIndexOf('.'));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const fmtSize = b => b < 1e6 ? `${Math.max(1, Math.round(b / 1e3))} Ko` : `${(b / 1e6).toFixed(1).replace('.', ',')} Mo`;
+const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+function thumbClass(f) {
+  const e = ext(f.name);
+  if (['heic', 'jpg', 'png', 'gif', 'icns'].includes(e)) return 't-photo-' + (f.hue || 'a');
+  if (['mov', 'mp4'].includes(e)) return 't-video';
+  if (e === 'm4a') return 't-audio';
+  return 't-doc';
+}
+const thumbHTML = f => `<div class="thumb ${thumbClass(f)}"><b>${ext(f.name).toUpperCase()}</b></div>`;
+
+let uid = 0;
+const stages = VARIANTS.map(v => {
+  const cell = document.createElement('section');
+  cell.className = 'cell';
+  cell.innerHTML = `<div class="cell-head"><span class="tag">${v.id}</span><h2>${v.name}</h2></div>
+    <p class="cell-desc">${v.desc}</p>
+    <div class="win" tabindex="0" aria-label="Fenêtre d'essai ${v.id}">
+      <div class="bar"><i></i><i></i><i></i><span>Téléchargements</span></div>
+      <div class="files"></div><div class="ring" hidden></div><div class="toast" hidden></div></div>`;
+  document.getElementById('grid').append(cell);
+  const st = { v, win: cell.querySelector('.win'), filesEl: cell.querySelector('.files'), ring: cell.querySelector('.ring'),
+    toastEl: cell.querySelector('.toast'), files: FILES.map(f => ({ ...f, id: ++uid })), sel: null, open: false,
+    hot: -1, acts: [], ang: [], cx: 0, cy: 0, held: false, moved: false, pos: { x: 160, y: 120 }, toastT: 0 };
+  st.sel = st.files[0].id;
+  renderFiles(st);
+  bind(st);
+  return st;
+});
+
+function renderFiles(st, freshId) {
+  st.filesEl.innerHTML = st.files.map(f => `<div class="file${f.id === st.sel ? ' sel' : ''}${f.id === freshId ? ' fresh' : ''}" data-id="${f.id}">
+    ${thumbHTML(f)}<span class="name">${esc(f.name)}</span><span class="size">${fmtSize(f.bytes)}</span></div>`).join('');
+}
+
+const angles = n => Array.from({ length: n }, (_, i) => -90 + i * 360 / n);
+const angDiff = (a, b) => Math.abs(((a - b + 540) % 360) - 180);
+const rad = d => d * Math.PI / 180;
+const pt = (r, a) => `${(r * Math.cos(rad(a))).toFixed(2)} ${(r * Math.sin(rad(a))).toFixed(2)}`;
+function arcPath(ri, ro, a0, a1) {
+  const large = a1 - a0 > 180 ? 1 : 0;
+  return `M ${pt(ro, a0)} A ${ro} ${ro} 0 ${large} 1 ${pt(ro, a1)} L ${pt(ri, a1)} A ${ri} ${ri} 0 ${large} 0 ${pt(ri, a0)} Z`;
+}
+function ringPath(ri, ro) { // anneau complet (une seule action)
+  return `M ${ro} 0 A ${ro} ${ro} 0 1 1 ${-ro} 0 A ${ro} ${ro} 0 1 1 ${ro} 0 Z M ${ri} 0 A ${ri} ${ri} 0 1 0 ${-ri} 0 A ${ri} ${ri} 0 1 0 ${ri} 0 Z`;
+}
+
+function estimate(file, a) {
+  if (a.clip) return 'presse-papiers';
+  if (a.share) return 'menu Partager';
+  return `${a.ext.toUpperCase()} · ~${fmtSize(file.bytes * a.ratio)}`;
+}
+
+// Libellé long découpé en deux lignes au plus, pour tenir dans un secteur.
+function twoLines(label) {
+  const words = label.split(' ');
+  if (label.length <= 11 || words.length === 1) return [label];
+  let best = [label], score = 1e9;
+  for (let i = 1; i < words.length; i++) {
+    const a = words.slice(0, i).join(' '), b = words.slice(i).join(' ');
+    const s = Math.max(a.length, b.length);
+    if (s < score) { score = s; best = [a, b]; }
+  }
+  return best;
+}
+
+function openRing(st, x, y) {
+  const file = st.files.find(f => f.id === st.sel);
+  if (!file) { toast(st, "Sélectionne d'abord un fichier"); return; }
+  const acts = (ACTIONS[TYPE_OF[ext(file.name)]] || []).slice(0, P.count);
+  if (!acts.length) { toast(st, 'Aucune action pour ce type de fichier'); return; }
+  const { v } = st, n = acts.length, r = P.radius;
+  const ro = v.labels === 'long' ? r + 40 : r + 30;
+  const ri = Math.max(14, Math.min(v.inner(r), ro - 30));
+  st.acts = acts; st.ang = angles(n); st.hot = -1; st.moved = false; st.file = file;
+  const R = ro * v.grow + 6;
+  const w = st.win.clientWidth, h = st.win.clientHeight;
+  const mx = Math.min(R, w / 2 - 4), my = Math.min(R, h / 2 - 4);
+  st.cx = clamp(x, mx, w - mx); st.cy = clamp(y, my, h - my);
+
+  const ring = st.ring;
+  ring.className = 'ring' + (v.ghost ? ' ghost' : '');
+  ring.style.left = st.cx + 'px'; ring.style.top = st.cy + 'px';
+  ring.style.setProperty('--dur', P.dur + 'ms');
+  ring.style.setProperty('--grow', v.grow);
+  ring.style.setProperty('--dim', v.dim);
+  const step = 360 / n, gap = n > 1 ? 1.2 : 0, s = 2 * R;
+  const tr = (ri + ro) / 2;
+  let svg = `<svg width="${s}" height="${s}" viewBox="${-R} ${-R} ${s} ${s}" aria-hidden="true">`;
+  st.ang.forEach((a, i) => {
+    const a0 = a - step / 2 + gap, a1 = a + step / 2 - gap;
+    const shape = n === 1 ? ringPath(ri, ro) : arcPath(ri, ro, a0, a1);
+    const edge = n === 1 ? ringPath(ro - 3, ro) : arcPath(ro - 3, ro, a0, a1);
+    const tx = (tr * Math.cos(rad(a))).toFixed(1), ty = (tr * Math.sin(rad(a))).toFixed(1);
+    let text;
+    if (v.labels === 'long') {
+      const lines = twoLines(acts[i].label);
+      text = `<text class="long" x="${tx}" y="${ty}">` + lines.map((l, j) =>
+        `<tspan x="${tx}" dy="${j === 0 ? (lines.length - 1) * -0.6 : 1.2}em">${esc(l)}</tspan>`).join('') + `</text>`;
+    } else text = `<text x="${tx}" y="${ty}">${esc(acts[i].k)}</text>`;
+    svg += `<g class="seg" data-i="${i}" style="transition: transform ${P.dur}ms cubic-bezier(.2,.9,.3,1.2) ${i * P.stagger}ms, opacity ${P.dur}ms ease ${i * P.stagger}ms">` +
+      `<path class="shape" d="${shape}"/>${v.ghost ? `<path class="edge" d="${edge}"/>` : ''}${text}</g>`;
+  });
+  if (v.needle) svg += `<g class="needle"><line x1="${P.dead * .6}" y1="0" x2="${ri - 6}" y2="0"/><circle r="3.5"/></g>`;
+  if (v.center === 'none' && !v.needle) svg += `<circle class="core" r="${Math.max(6, ri - 6)}"/>`;
+  svg += `</svg>`;
+  let html = svg;
+  if (v.center === 'preview') {
+    const hd = 2 * ri - 8;
+    html += `<div class="hub" style="width:${hd}px;height:${hd}px">${thumbHTML(file)}<span class="lbl"></span><span class="est"></span></div>`;
+  }
+  if (v.center === 'none' && v.labels === 'short') html += `<div class="caption" style="top:${ro + 10}px"></div>`;
+  ring.innerHTML = html;
+  ring.hidden = false;
+  void ring.offsetWidth;
+  ring.classList.add('open');
+  st.open = true;
+  // Une fois l'ouverture jouée, le survol réagit tout de suite (sans le décalage de l'ouverture).
+  clearTimeout(st.settleT);
+  st.settleT = setTimeout(() => ring.querySelectorAll('g.seg').forEach(g => {
+    g.style.transition = 'transform 110ms cubic-bezier(.2,.9,.3,1.2), opacity 110ms ease';
+  }), P.dur + n * P.stagger);
+  setHot(st, -1);
+}
+
+function closeRing(st) {
+  if (!st.open) return;
+  st.open = false;
+  const ring = st.ring;
+  ring.classList.remove('open', 'has-hot');
+  clearTimeout(st.closeT);
+  st.closeT = setTimeout(() => { if (!st.open) ring.hidden = true; }, 130);
+}
+
+function setHot(st, i) {
+  st.hot = i;
+  const ring = st.ring;
+  ring.classList.toggle('has-hot', i !== -1);
+  ring.querySelectorAll('g.seg').forEach(g => {
+    const on = +g.dataset.i === i;
+    g.classList.toggle('hot', on);
+    g.classList.toggle('dim', !on);
+  });
+  const a = st.acts[i];
+  const lbl = ring.querySelector('.lbl'), est = ring.querySelector('.est'), cap = ring.querySelector('.caption');
+  if (lbl) lbl.textContent = a ? a.label : st.file.name;
+  if (est) est.textContent = a ? estimate(st.file, a) : fmtSize(st.file.bytes);
+  if (cap) { cap.textContent = a ? a.label : ''; cap.classList.toggle('show', !!a); }
+}
+
+function aim(st, x, y) {
+  const needle = st.ring.querySelector('g.needle');
+  if (needle) needle.style.transform = `rotate(${Math.atan2(y - st.cy, x - st.cx) * 180 / Math.PI}deg)`;
+}
+
+function pick(st, x, y) {
+  const dx = x - st.cx, dy = y - st.cy;
+  if (Math.hypot(dx, dy) < P.dead) return -1;
+  const a = Math.atan2(dy, dx) * 180 / Math.PI;
+  let best = -1, bd = 999;
+  st.ang.forEach((g, i) => { const d = angDiff(a, g); if (d < bd) { bd = d; best = i; } });
+  return best;
+}
+
+function run(st) {
+  const a = st.acts[st.hot], file = st.file;
+  if (!a) return;
+  setTimeout(() => {
+    closeRing(st);
+    if (a.clip) return toast(st, `${a.label} : ${file.name}`);
+    if (a.share) return toast(st, `Menu Partager ouvert pour ${file.name}`);
+    let name = base(file.name) + (a.suffix || '') + '.' + a.ext, k = 2;
+    while (st.files.some(f => f.name === name)) name = `${base(file.name)}${a.suffix || ''} ${k++}.${a.ext}`;
+    const nf = { name, bytes: file.bytes * a.ratio, hue: file.hue, id: ++uid };
+    st.files.splice(st.files.indexOf(file) + 1, 0, nf);
+    renderFiles(st, nf.id);
+    toast(st, `${name} créé · ${fmtSize(nf.bytes)}`, true);
+  }, 90);
+}
+
+function toast(st, text, ok) {
+  st.toastEl.innerHTML = (ok ? '<span class="ok">✓</span>' : '') + esc(text);
+  st.toastEl.hidden = false;
+  clearTimeout(st.toastT);
+  st.toastT = setTimeout(() => { st.toastEl.hidden = true; }, 2600);
+}
+
+let active = null;
+function local(st, e) { const b = st.win.getBoundingClientRect(); return { x: e.clientX - b.left, y: e.clientY - b.top }; }
+function selectAt(st, target) {
+  const f = target.closest('.file');
+  if (f) { st.sel = +f.dataset.id; renderFiles(st); }
+  return !!f;
+}
+
+function bind(st) {
+  const win = st.win;
+  win.addEventListener('pointerenter', () => { active = st; });
+  win.addEventListener('pointerleave', () => { if (active === st && !st.open) active = null; });
+  win.addEventListener('pointermove', e => {
+    st.pos = local(st, e);
+    if (!st.open) return;
+    aim(st, st.pos.x, st.pos.y);
+    const i = pick(st, st.pos.x, st.pos.y);
+    if (i !== -1) st.moved = true;
+    if (i !== st.hot) setHot(st, i);
+  });
+  win.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    if (st.open) { closeRing(st); return; }
+    selectAt(st, e.target);
+    const p = local(st, e);
+    st.held = true;
+    openRing(st, p.x, p.y);
+  });
+  win.addEventListener('pointerup', e => {
+    if (e.button === 2 && st.held) {
+      st.held = false;
+      if (P.mode === 'release' && st.open && st.hot !== -1 && st.moved) run(st);
+    }
+  });
+  win.addEventListener('pointerdown', e => {
+    if (e.button !== 0) return;
+    if (st.open) {
+      const p = local(st, e), i = pick(st, p.x, p.y);
+      if (i !== -1) { setHot(st, i); run(st); } else closeRing(st);
+      e.preventDefault();
+      return;
+    }
+    if (!selectAt(st, e.target)) { st.sel = null; renderFiles(st); }
+  });
+}
+
+let keyHeld = false;
+document.addEventListener('keydown', e => {
+  if (e.target.closest && e.target.closest('input, select, button')) return;
+  if (e.key === 'Escape') { stages.forEach(closeRing); return; }
+  if ((e.key === 'r' || e.key === 'R') && !e.repeat && active && !keyHeld) {
+    keyHeld = true;
+    if (!active.open) openRing(active, active.pos.x, active.pos.y);
+  }
+});
+document.addEventListener('keyup', e => {
+  if ((e.key === 'r' || e.key === 'R') && keyHeld) {
+    keyHeld = false;
+    const st = active;
+    if (st && st.open && P.mode === 'release' && st.hot !== -1 && st.moved) run(st);
+  }
+});
+
+// Réglages partagés
+const ids = ['radius', 'dur', 'stagger', 'dead', 'count'];
+const units = { radius: ' px', dur: ' ms', stagger: ' ms', dead: ' px', count: '' };
+function syncControls() {
+  ids.forEach(k => { document.getElementById('p-' + k).value = P[k]; document.getElementById('o-' + k).textContent = P[k] + units[k]; });
+  document.getElementById('p-mode').value = P.mode;
+}
+function reopenAll() {
+  stages.forEach(st => { if (st.open) { const { cx, cy, hot } = st; st.open = false; openRing(st, cx, cy); setHot(st, Math.min(hot, st.acts.length - 1)); } });
+}
+ids.forEach(k => document.getElementById('p-' + k).addEventListener('input', e => {
+  P[k] = +e.target.value; document.getElementById('o-' + k).textContent = P[k] + units[k];
+  reopenAll();
+}));
+document.getElementById('p-mode').addEventListener('change', e => { P.mode = e.target.value; });
+document.getElementById('reset').addEventListener('click', () => { Object.assign(P, DEFAULTS); syncControls(); reopenAll(); });
+syncControls();
+
+// État de départ : chaque anneau ouvert sur le premier HEIC, « Convertir en JPG » visé, pour comparer d'un coup d'œil.
+requestAnimationFrame(() => stages.forEach(st => {
+  const w = st.win.getBoundingClientRect();
+  openRing(st, w.width * .62, w.height * .58);
+  setHot(st, 0);
+  aim(st, st.cx, st.cy - 60);
+}));
+</script>
