@@ -10,13 +10,23 @@ import Testing
     #expect(ring.centerAngle(of: 3) == 180)
 }
 
-@Test func sectorFollowsDirectionNotDistance() {
+@Test func sectorFollowsDirectionInsideTheRing() {
     let ring = RingGeometry(count: 4, radius: 84, deadZone: 16)
     // Coordonnées écran : y vers le bas, donc « en haut » = dy négatif.
     #expect(ring.sector(dx: 0, dy: -30) == 0)
-    #expect(ring.sector(dx: 300, dy: 10) == 1)
-    #expect(ring.sector(dx: -5, dy: 200) == 2)
+    #expect(ring.sector(dx: 90, dy: 10) == 1)
+    #expect(ring.sector(dx: -5, dy: 80) == 2)
     #expect(ring.sector(dx: -40, dy: 0) == 3)
+}
+
+@Test func outsideTheRingSelectsNothing() {
+    let ring = RingGeometry(count: 4, radius: 84, deadZone: 16)
+    #expect(ring.reach == 96)
+    #expect(ring.sector(dx: 0, dy: -96) == 0)
+    #expect(ring.sector(dx: 0, dy: -97) == nil)
+    #expect(ring.sector(dx: 300, dy: 10) == nil)
+    #expect(ring.isAiming(dx: 300, dy: 10))
+    #expect(!ring.isAiming(dx: 5, dy: 5))
 }
 
 @Test func deadZoneSelectsNothing() {

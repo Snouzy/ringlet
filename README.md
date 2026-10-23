@@ -30,7 +30,7 @@ move toward it. Everything runs on your Mac, with Apple frameworks only.
 | **Services** menu | Finder right-click | *Convertir en JPG / PNG avec Ringlet*, no ring needed. |
 
 Then move toward an action and release. Release without aiming and the ring stays open: click a slice, press
-`Return`, or `Esc` to close. Come back to the **✕** in the middle to cancel.
+`Return`, or `Esc` to close. To cancel, come back to the **✕** in the middle or move out past the ring.
 
 ## Actions
 
@@ -115,7 +115,7 @@ swift test                 # core tests: ring geometry, action catalog, naming, 
 
 Ringlet est un anneau d'actions pour le Finder. Tu sélectionnes des fichiers, tu maintiens `⌃⌥ Espace`, le clic droit
 (dans le Finder) ou un bouton de souris, tu pars vers une action et tu relâches. On choisit par la direction, sans
-viser précisément.
+viser précisément ; relâcher sur la croix ou hors de l'anneau annule.
 
 - **Sur tous les fichiers :** aperçu (Coup d'œil), ouvrir dans le terminal, ouvrir dans l'éditeur de code, copier le chemin, remonter d'un niveau.
 - **Photos HEIC :** convertir en JPG ou en PNG, métadonnées conservées.

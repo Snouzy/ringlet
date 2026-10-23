@@ -46,7 +46,7 @@ même sa sélection (le cas usuel est « je viens de cliquer un fichier dans le 
 - Secteurs pleins de `-90°` dans le sens horaire, un par action, petit écart entre eux ; zone morte au centre ;
   étiquette du secteur visé sous l'anneau. Ouverture : chaque secteur grandit depuis le centre avec un léger décalage.
 - Valeurs par défaut reprises du prototype : rayon 84 pt, ouverture 180 ms, décalage 14 ms, zone morte 16 pt.
-- Choix par **direction** (angle le plus proche), pas par position exacte : on n'a pas besoin d'atteindre le secteur.
+- Choix par **direction** (angle le plus proche), pas par position exacte : on n'a pas besoin d'atteindre le secteur. Au-delà du bord de l'anneau (plus 12 pt de marge), rien n'est visé : relâcher là annule.
 - Anneau recentré pour rester entier à l'écran près d'un bord ; la direction se calcule depuis son centre réel.
 - Mode clair et sombre (matériau système), `Réduire les animations` respecté.
 

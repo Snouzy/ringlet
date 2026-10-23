@@ -75,7 +75,7 @@ enum RingTarget: Equatable {
         guard isHolding else { return }
         isHolding = false
         guard isOpen, hasAimed else { return }
-        if model.hot != nil { runHot() } else { close() }   // revenu sur la croix : annuler
+        if model.hot != nil { runHot() } else { close() }   // sur la croix ou hors de l'anneau : annuler
     }
 
     /// Lance une action sans anneau (Services du clic droit) et montre le résultat sous le curseur.
@@ -201,10 +201,8 @@ enum RingTarget: Equatable {
             return false
         case .leftMouseDown:
             track()
-            // Le choix se fait par direction ; un clic hors de l'anneau ferme au lieu de choisir.
-            let point = viewPoint(NSEvent.mouseLocation)
-            let inside = hypot(point.x - model.center.x, point.y - model.center.y) <= model.geometry.radius + 12
-            if inside, model.hot != nil { runHot() } else { close() }
+            // Hors de l'anneau ou sur la croix, rien n'est visé : le clic ferme.
+            if model.hot != nil { runHot() } else { close() }
             return true
         default:
             track()
@@ -215,8 +213,9 @@ enum RingTarget: Equatable {
     private func track() {
         guard isOpen else { return }
         let point = viewPoint(NSEvent.mouseLocation)
-        let hot = model.geometry.sector(dx: point.x - model.center.x, dy: point.y - model.center.y)
-        if hot != nil { hasAimed = true }
+        let dx = point.x - model.center.x, dy = point.y - model.center.y
+        let hot = model.geometry.sector(dx: dx, dy: dy)
+        if model.geometry.isAiming(dx: dx, dy: dy) { hasAimed = true }
         if hot != model.hot { model.hot = hot }
         let cancel = hasAimed && hot == nil
         if cancel != model.cancelHot { model.cancelHot = cancel }

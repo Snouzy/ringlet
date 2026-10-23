@@ -2,7 +2,8 @@ import CoreGraphics
 import Foundation
 
 /// Géométrie du camembert, en coordonnées écran (y vers le bas, angles en degrés, 0° à droite, sens horaire).
-/// Le premier secteur pointe vers le haut ; on choisit par la direction, quelle que soit la distance au centre.
+/// Le premier secteur pointe vers le haut ; on choisit par la direction, entre la zone morte et le bord de l'anneau.
+/// Au-delà du bord, rien n'est visé : relâcher là annule, comme sur la croix.
 public struct RingGeometry: Sendable, Equatable {
     public var count: Int
     /// Rayon extérieur des secteurs.
@@ -22,13 +23,19 @@ public struct RingGeometry: Sendable, Equatable {
     /// Rayon intérieur dessiné : un peu au-delà de la zone morte.
     public var innerRadius: Double { max(deadZone + 6, 24) }
 
+    /// Distance au-delà de laquelle on est hors de l'anneau : son bord, plus une marge pour ne pas le rater de peu.
+    public var reach: Double { radius + 12 }
+
+    /// true dès qu'on a quitté la zone morte, dans l'anneau ou hors de lui.
+    public func isAiming(dx: Double, dy: Double) -> Bool { (dx * dx + dy * dy).squareRoot() >= deadZone }
+
     public var sectorWidth: Double { count > 0 ? 360 / Double(count) : 0 }
 
     public func centerAngle(of index: Int) -> Double { -90 + Double(index) * sectorWidth }
 
-    /// Secteur visé par un déplacement depuis le centre ; nil dans la zone morte.
+    /// Secteur visé par un déplacement depuis le centre ; nil dans la zone morte et hors de l'anneau.
     public func sector(dx: Double, dy: Double) -> Int? {
-        guard count > 0, (dx * dx + dy * dy).squareRoot() >= deadZone else { return nil }
+        guard count > 0, isAiming(dx: dx, dy: dy), (dx * dx + dy * dy).squareRoot() <= reach else { return nil }
         let angle = atan2(dy, dx) * 180 / .pi
         // Décalé pour que le secteur 0 couvre [-90 - w/2, -90 + w/2[.
         let shifted = (angle + 90 + sectorWidth / 2).truncatingRemainder(dividingBy: 360)
