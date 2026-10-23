@@ -15,7 +15,7 @@ import RingletCore
 
     private func handle(_ kind: ActionKind, _ pasteboard: NSPasteboard) {
         let urls = (pasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL]) ?? []
-        let usable = urls.filter { ActionCatalog.actions(for: [$0], terminal: "").contains { $0.kind == kind } }
+        let usable = urls.filter { ActionCatalog.actions(for: [$0], terminal: "", editor: "").contains { $0.kind == kind } }
         if !usable.isEmpty { onRun(kind, usable) }
     }
 }

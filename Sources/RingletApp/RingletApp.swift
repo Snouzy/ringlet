@@ -9,6 +9,8 @@ private let log = Logger(subsystem: "io.snouzy.ringlet", category: "app")
 struct RingletApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
 
+    init() { Screenshots.runIfAsked() }
+
     var body: some Scene {
         MenuBarExtra {
             MenuContent(delegate: delegate)
@@ -63,6 +65,7 @@ struct RingletApp: App {
         mouse.mode = prefs.mouseTrigger
         if prefs.mouseTrigger != .none, !mouse.isRunning { mouse.refresh() }
         ring.ringSize = prefs.ringSize
+        ring.look = prefs.look
         ring.jpegQuality = prefs.jpegQuality
         ring.terminal = prefs.terminal
         ring.editor = prefs.editor

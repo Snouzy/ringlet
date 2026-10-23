@@ -20,8 +20,10 @@ enum FinderScript {
     }
 
     /// Chemin écrit dans une chaîne AppleScript.
-    static func quoted(_ url: URL) -> String {
-        "\"" + url.path.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"") + "\""
+    static func quoted(_ url: URL) -> String { quoted(url.path) }
+
+    static func quoted(_ text: String) -> String {
+        "\"" + text.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"") + "\""
     }
 
     /// Dossier affiché par la fenêtre Finder de devant ; le bureau s'il n'y a pas de fenêtre.
@@ -38,13 +40,32 @@ enum FinderScript {
         }
     }
 
-    /// Affiche le parent de `folder` dans la fenêtre Finder de devant, ou dans une nouvelle s'il n'y en a pas
-    /// (sans effet à la racine du disque).
-    @MainActor static func goUp(from folder: URL) -> Result<Void, Failure> {
-        let parent = folder.deletingLastPathComponent()
-        guard parent.standardizedFileURL.path != folder.standardizedFileURL.path else { return .success(()) }
+    /// ⌘↑ sur la fenêtre du Finder qui montre `item` : la plus profonde dont le dossier contient ce chemin (un
+    /// dossier se donne avec son « / » final, pour viser sa propre fenêtre). Elle passe au parent du dossier qu'elle
+    /// affiche, même si l'élément est plus bas dans une liste dépliée. Sans fenêtre qui le montre, la fenêtre de devant
+    /// (ou une nouvelle) affiche le parent de `fallback`. Sans effet à la racine du disque.
+    @MainActor static func goUp(showing item: String, fallback: URL) -> Result<Void, Failure> {
+        let parent = fallback.deletingLastPathComponent()
         return run("""
         tell application "Finder"
+            set best to missing value
+            set bestLength to 0
+            repeat with w in Finder windows
+                try
+                    set shown to POSIX path of (target of w as alias)
+                    if \(quoted(item)) starts with shown and (length of shown) > bestLength then
+                        set best to w
+                        set bestLength to length of shown
+                    end if
+                end try
+            end repeat
+            if best is not missing value then
+                try
+                    set target of best to container of (target of best)
+                end try
+                return
+            end if
+            if \(quoted(parent)) is \(quoted(fallback)) then return
             set up to (POSIX file \(quoted(parent)) as alias)
             if (count of Finder windows) is 0 then
                 open up

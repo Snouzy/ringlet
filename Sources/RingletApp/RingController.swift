@@ -41,6 +41,7 @@ enum RingTarget: Equatable {
 @MainActor final class RingController {
     var jpegQuality = 0.9
     var ringSize = RingSize.medium
+    var look = RingLook()
     var terminal = AppChoice(bundleID: "com.apple.Terminal")
     var editor = AppChoice(bundleID: "com.microsoft.VSCode")
 
@@ -135,8 +136,8 @@ enum RingTarget: Equatable {
         switch resolved {
         case .files(let urls):
             let desktop = FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first?.standardizedFileURL.path
-            let onDesktop = FolderTargets.folders(for: urls).allSatisfy { $0.standardizedFileURL.path == desktop }
-            actions = ActionCatalog.actions(for: urls, terminal: terminal.name, canGoUp: !onDesktop)
+            let onDesktop = FolderTargets.containing(urls)?.standardizedFileURL.path == desktop
+            actions = ActionCatalog.actions(for: urls, terminal: terminal.name, editor: editor.name, canGoUp: !onDesktop)
         case .folder(_, let isDesktop):
             actions = ActionCatalog.folderActions(isDesktop: isDesktop, terminal: terminal.name, editor: editor.name)
         }
@@ -148,6 +149,7 @@ enum RingTarget: Equatable {
         model.message = nil
         model.actions = actions
         model.geometry = .standard(count: actions.count, size: ringSize)
+        model.look = look
         model.center = RingGeometry.clampedCenter(point, outerRadius: model.geometry.radius + 40,
                                                   in: CGRect(origin: .zero, size: panel.frame.size))
         model.hot = nil
@@ -225,7 +227,7 @@ enum RingTarget: Equatable {
     private func runHot() {
         guard let hot = model.hot, model.actions.indices.contains(hot) else { return }
         let kind = model.actions[hot].kind, center = model.center
-        close(keepPanel: true)
+        close()
         perform(kind, on: target, messageAt: center)
     }
 
@@ -244,8 +246,16 @@ enum RingTarget: Equatable {
             open(FolderTargets.folders(for: urls), with: terminal, messageAt: center)
         case .openEditor:
             open(urls, with: editor, messageAt: center)
+        case .quickLook:
+            QuickLook.shared.show(urls)
         case .goUp:
-            report(FinderScript.goUp(from: FolderTargets.folders(for: urls)[0]), at: center)
+            // Comme ⌘↑ dans la fenêtre qui montre l'élément, fichier ou dossier ; pour l'anneau d'un dossier,
+            // l'élément est ce dossier, que montre sa propre fenêtre.
+            if case .folder(let folder, _) = target {
+                report(FinderScript.goUp(showing: folder.path + "/", fallback: folder), at: center)
+            } else if let item = urls.first, let shown = FolderTargets.containing(urls) {
+                report(FinderScript.goUp(showing: item.path, fallback: shown), at: center)
+            }
         case .newFolder:
             report(FinderScript.newFolder(in: urls[0]), at: center)
             // Avec l'Accessibilité, on entre directement dans le renommage, comme ⇧⌘N.
@@ -292,14 +302,17 @@ enum RingTarget: Equatable {
         }
     }
 
-    private func close(keepPanel: Bool = false) {
+    /// Retire toujours le panneau : resté devant, ce calque plein écran prendrait les clics et le clavier
+    /// (aperçu, terminal…). La bulle d'un résultat le remet devant, sans clics.
+    private func close() {
         stopMonitoring()
         isHolding = false
         model.isOpen = false
         model.hot = nil
         model.cancelHot = false
         model.showsRing = false
-        if !keepPanel { panel.orderOut(nil) }
+        panel.ignoresMouseEvents = true
+        panel.orderOut(nil)
     }
 
     /// Bulle sous le curseur. `busy` : action longue, la bulle reste jusqu'au message suivant.

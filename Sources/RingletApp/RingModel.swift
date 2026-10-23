@@ -6,6 +6,7 @@ import SwiftUI
 @MainActor @Observable final class RingModel {
     var actions: [FileAction] = []
     var geometry = RingGeometry.standard(count: 0)
+    var look = RingLook()
     var center: CGPoint = .zero
     var hot: Int?
     /// Le curseur est revenu au centre après avoir visé : relâcher annule, la croix s'allume.

@@ -39,6 +39,12 @@ enum MouseTrigger: String, CaseIterable, Identifiable {
     var holdDelay: Double { didSet { save(); onChange() } }
     var jpegQuality: Double { didSet { save(); onChange() } }
     var ringSize: RingSize { didSet { save(); onChange() } }
+    var ringStyle: RingStyle { didSet { save(); onChange() } }
+    var accent: RingAccent { didSet { save(); onChange() } }
+    /// Opacité du verre (style Verre), de 0,3 à 0,95.
+    var glassOpacity: Double { didSet { save(); onChange() } }
+    /// En plus du réglage d'accessibilité de macOS.
+    var reduceMotion: Bool { didSet { save(); onChange() } }
     var hasSeenWelcome: Bool { didSet { save() } }
     var terminal: AppChoice { didSet { save(); onChange() } }
     var editor: AppChoice { didSet { save(); onChange() } }
@@ -51,6 +57,10 @@ enum MouseTrigger: String, CaseIterable, Identifiable {
         holdDelay = defaults.object(forKey: "holdDelay") as? Double ?? 0.28
         jpegQuality = defaults.object(forKey: "jpegQuality") as? Double ?? 0.9
         ringSize = defaults.string(forKey: "ringSize").flatMap(RingSize.init) ?? .medium
+        ringStyle = defaults.string(forKey: "ringStyle").flatMap(RingStyle.init) ?? .glass
+        accent = defaults.string(forKey: "accent").flatMap(RingAccent.init) ?? .system
+        glassOpacity = GlassOpacity.clamped(defaults.object(forKey: "glassOpacity") as? Double ?? GlassOpacity.standard)
+        reduceMotion = defaults.bool(forKey: "reduceMotion")
         hasSeenWelcome = defaults.bool(forKey: "hasSeenWelcome")
         terminal = defaults.string(forKey: "terminal").map(AppChoice.init)
             ?? AppChoice.firstInstalled(AppChoice.terminals, fallback: "com.apple.Terminal")
@@ -64,8 +74,18 @@ enum MouseTrigger: String, CaseIterable, Identifiable {
         defaults.set(holdDelay, forKey: "holdDelay")
         defaults.set(jpegQuality, forKey: "jpegQuality")
         defaults.set(ringSize.rawValue, forKey: "ringSize")
+        defaults.set(ringStyle.rawValue, forKey: "ringStyle")
+        defaults.set(accent.rawValue, forKey: "accent")
+        defaults.set(glassOpacity, forKey: "glassOpacity")
+        defaults.set(reduceMotion, forKey: "reduceMotion")
         defaults.set(hasSeenWelcome, forKey: "hasSeenWelcome")
         defaults.set(terminal.bundleID, forKey: "terminal")
         defaults.set(editor.bundleID, forKey: "editor")
+    }
+}
+
+extension Preferences {
+    var look: RingLook {
+        RingLook(style: ringStyle, accent: accent, glassOpacity: glassOpacity, reduceMotion: reduceMotion)
     }
 }

@@ -2,6 +2,7 @@ import Foundation
 import UniformTypeIdentifiers
 
 public enum ActionKind: String, Sendable, CaseIterable {
+    case quickLook
     case convertToJPEG
     case convertToPNG
     case removeGPS
@@ -29,14 +30,14 @@ public struct FileAction: Sendable, Equatable, Identifiable {
     }
 }
 
-/// Actions proposées : seulement celles qui valent pour tous les fichiers sélectionnés, conversions d'abord
-/// (la première est en haut de l'anneau), puis terminal et chemin, qui valent pour tout, et « Remonter »
+/// Actions proposées : l'aperçu en haut de l'anneau, puis celles qui valent pour tous les fichiers sélectionnés
+/// (conversions), puis terminal, éditeur et chemin, qui valent pour tout, et « Remonter »
 /// quand les fichiers sont dans une fenêtre du Finder (pas sur le bureau).
 public enum ActionCatalog {
-    public static func actions(for urls: [URL], terminal: String, canGoUp: Bool = false) -> [FileAction] {
+    public static func actions(for urls: [URL], terminal: String, editor: String, canGoUp: Bool = false) -> [FileAction] {
         guard !urls.isEmpty else { return [] }
         let types = urls.map { UTType(filenameExtension: $0.pathExtension) }
-        var actions: [FileAction] = []
+        var actions = [FileAction(kind: .quickLook, shortLabel: "Aperçu", symbol: "eye", label: "Aperçu")]
         if types.allSatisfy({ $0.map(isHEIC) ?? false }) {
             actions.append(FileAction(kind: .convertToJPEG, shortLabel: "JPG", label: "Convertir en JPG"))
             actions.append(FileAction(kind: .convertToPNG, shortLabel: "PNG", label: "Convertir en PNG"))
@@ -54,6 +55,8 @@ public enum ActionCatalog {
         }
         actions.append(FileAction(kind: .openTerminal, shortLabel: "Terminal", symbol: "terminal",
                                   label: "Ouvrir dans \(terminal)"))
+        actions.append(FileAction(kind: .openEditor, shortLabel: "Éditeur", symbol: "chevron.left.forwardslash.chevron.right",
+                                  label: "Ouvrir dans \(editor)"))
         actions.append(FileAction(kind: .copyPath, shortLabel: "Chemin", symbol: "doc.on.clipboard",
                                   label: urls.count == 1 ? "Copier le chemin" : "Copier les chemins"))
         if canGoUp { actions.append(goUp) }
@@ -91,6 +94,12 @@ public enum FolderTargets {
             if seen.insert(path).inserted { result.append(URL(fileURLWithPath: path, isDirectory: true)) }
         }
         return result
+    }
+
+    /// Dossier où sont rangés les éléments choisis, celui qu'affiche la fenêtre du Finder (le premier s'ils sont
+    /// dans plusieurs). Pour un dossier choisi, c'est son parent, pas le dossier lui-même.
+    public static func containing(_ urls: [URL]) -> URL? {
+        urls.first.map { URL(fileURLWithPath: $0.standardizedFileURL.deletingLastPathComponent().path, isDirectory: true) }
     }
 }
 
