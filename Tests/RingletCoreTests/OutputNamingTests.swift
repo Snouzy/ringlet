@@ -20,3 +20,10 @@ import Testing
     #expect(OutputNaming.destination(for: source, fileExtension: "png", exists: { _ in false }).lastPathComponent
             == "vacances.2026.png")
 }
+
+@Test func suffixGoesBeforeTheNumber() {
+    let source = URL(fileURLWithPath: "/d/IMG.heic")
+    let taken: Set<String> = ["/d/IMG-sans-gps.heic"]
+    #expect(OutputNaming.destination(for: source, fileExtension: "heic", suffix: "-sans-gps",
+                                     exists: { taken.contains($0.path) }).lastPathComponent == "IMG-sans-gps 2.heic")
+}

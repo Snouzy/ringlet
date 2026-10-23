@@ -8,13 +8,13 @@ Spec : `docs/specs/2026-10-23-ringlet-design.md`. Une étape = des tests verts a
 - [x] 4. `OutputNaming` : `IMG.jpg`, puis `IMG 2.jpg`… (tests)
 - [x] 5. `ImageConverter` (ImageIO) : écriture temporaire + renommage, EXIF/orientation conservés, original intact,
         échec par fichier sans arrêter les autres (tests sur une image HEIC générée)
-- [ ] 6. App barre des menus : icône, menu, lancement à l'ouverture de session
-- [ ] 7. Lecture de la sélection du Finder (Apple Events) + message si l'autorisation est refusée
-- [ ] 8. Panneau de l'anneau R2a en SwiftUI : ouverture animée, suivi de la souris, survol, choix au relâché / au clic, Échap
-- [ ] 9. Raccourci maintenu (Carbon hot key, appui + relâché), branché sur l'anneau
-- [ ] 10. Bouton de souris (event tap, autorisation Accessibilité à l'activation), désactivé par défaut
-- [ ] 11. Services « Convertir en JPG / PNG avec Ringlet » (secours du clic droit)
-- [ ] 12. Réglages (raccourci, bouton, qualité JPG, rayon)
+- [x] 6. App barre des menus : icône, menu, lancement à l'ouverture de session
+- [x] 7. Lecture de la sélection du Finder (Apple Events) + message si l'autorisation est refusée
+- [x] 8. Panneau de l'anneau R2a en SwiftUI : ouverture animée, suivi de la souris, survol, choix au relâché / au clic, Échap
+- [x] 9. Raccourci maintenu (Carbon hot key, appui + relâché), branché sur l'anneau
+- [x] 10. Bouton de souris (event tap, autorisation Accessibilité à l'activation), désactivé par défaut
+- [x] 11. Services « Convertir en JPG / PNG avec Ringlet » (secours du clic droit)
+- [x] 12. Réglages (raccourci, bouton, qualité JPG, rayon)
 - [ ] 13. `scripts/build-app.sh` + `scripts/install.sh`, essai réel dans le Finder sur de vrais HEIC
 - [ ] 14. Relecture complète, README final
 

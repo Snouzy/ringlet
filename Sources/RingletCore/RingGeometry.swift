@@ -14,6 +14,14 @@ public struct RingGeometry: Sendable, Equatable {
         self.count = count; self.radius = radius; self.deadZone = deadZone
     }
 
+    /// Valeurs du prototype R2a : rayon extérieur 114 pt (taille moyenne), zone morte 16 pt.
+    public static func standard(count: Int, size: RingSize = .medium) -> RingGeometry {
+        RingGeometry(count: count, radius: size.radius, deadZone: 16)
+    }
+
+    /// Rayon intérieur dessiné : un peu au-delà de la zone morte.
+    public var innerRadius: Double { max(deadZone + 6, 24) }
+
     public var sectorWidth: Double { count > 0 ? 360 / Double(count) : 0 }
 
     public func centerAngle(of index: Int) -> Double { -90 + Double(index) * sectorWidth }

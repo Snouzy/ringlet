@@ -27,6 +27,8 @@ public enum ConversionError: Error, Sendable, Equatable {
     case unreadable
     /// L'image n'a pas pu être écrite (disque plein, dossier en lecture seule…).
     case writeFailed
+    /// Vidéo sans piste audio à extraire.
+    case noAudio
 }
 
 public struct ConversionResult: Sendable, Equatable {
@@ -55,9 +57,7 @@ public enum ImageConverter {
         else { throw .unreadable }
 
         let output = OutputNaming.destination(for: source, fileExtension: format.fileExtension)
-        // Écrit d'abord sous un nom caché du même dossier, puis renommé : jamais de fichier à moitié écrit.
-        let temporary = output.deletingLastPathComponent()
-            .appendingPathComponent(".ringlet-\(UUID().uuidString).\(format.fileExtension)")
+        let temporary = OutputNaming.temporary(beside: output)
         guard let destination = CGImageDestinationCreateWithURL(temporary as CFURL, format.type.identifier as CFString, 1, nil)
         else { throw .writeFailed }
         CGImageDestinationAddImage(destination, image, metadata(from: props, for: format) as CFDictionary)
@@ -65,12 +65,7 @@ public enum ImageConverter {
             try? FileManager.default.removeItem(at: temporary)
             throw .writeFailed
         }
-        do {
-            try FileManager.default.moveItem(at: temporary, to: output)
-        } catch {
-            try? FileManager.default.removeItem(at: temporary)
-            throw .writeFailed
-        }
+        try OutputNaming.commit(temporary, to: output)
         return output
     }
 
