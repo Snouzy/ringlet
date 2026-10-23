@@ -7,7 +7,18 @@ import OSLog
         var keyCode: UInt32
         var modifiers: UInt32
         var label: String
-        static let standard = Combo(keyCode: UInt32(kVK_Space), modifiers: UInt32(controlKey | optionKey), label: "⌃⌥ Espace")
+        static let standard = Combo(keyCode: UInt32(kVK_Space), modifiers: UInt32(controlKey | optionKey), label: "⌃⌥ Space")
+
+        /// Libellé affiché, dans la langue de l'app : `label` est enregistré tel quel et peut dater d'une autre langue.
+        var title: String {
+            let symbols = String(label.prefix { "⌃⌥⇧⌘".contains($0) })
+            let key = label.dropFirst(symbols.count).trimmingCharacters(in: .whitespaces)
+            switch Int(keyCode) {
+            case kVK_Space: return "\(symbols) \(String(localized: "Space", comment: "Touche Espace"))"
+            case kVK_Return: return "\(symbols) \(String(localized: "Return", comment: "Touche Entrée"))"
+            default: return "\(symbols) \(key)"
+            }
+        }
     }
 
     var onPress: () -> Void = {}

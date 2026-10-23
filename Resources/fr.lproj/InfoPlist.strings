@@ -1,0 +1,2 @@
+/* Demande d'autorisation Automatisation › Finder */
+"NSAppleEventsUsageDescription" = "Ringlet lit les fichiers sélectionnés dans le Finder pour proposer les actions de l'anneau.";

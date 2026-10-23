@@ -39,7 +39,7 @@ func copyWithoutGPSKeepsTheRest(name: String, type: UTType) throws {
     let output = try MetadataStripper.removeGPS(from: source)
 
     let base = (name as NSString).deletingPathExtension, ext = (name as NSString).pathExtension
-    #expect(output.lastPathComponent == "\(base)-sans-gps.\(ext)")
+    #expect(output.lastPathComponent == "\(base)-no-gps.\(ext)")
     let result = try props(output)
     #expect(result[kCGImagePropertyGPSDictionary] == nil)
     #expect((result[kCGImagePropertyExifDictionary] as? [CFString: Any])?[kCGImagePropertyExifDateTimeOriginal] as? String

@@ -24,7 +24,7 @@ struct AppChoice: Hashable, Identifiable {
         let panel = NSOpenPanel()
         panel.directoryURL = URL(fileURLWithPath: "/Applications")
         panel.allowedContentTypes = [.application]
-        panel.prompt = "Choisir"
+        panel.prompt = String(localized: "Choose")
         guard panel.runModal() == .OK, let url = panel.url, let id = Bundle(url: url)?.bundleIdentifier else { return nil }
         return AppChoice(bundleID: id)
     }

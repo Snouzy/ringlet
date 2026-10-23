@@ -38,11 +38,11 @@ private func kinds(_ names: String...) -> [ActionKind] {
 
 @Test func labelsNameTheChosenApps() {
     let file = ActionCatalog.actions(for: urls("a.pdf", "b.pdf"), terminal: "Ghostty", editor: "VS Code")
-    #expect(file.map(\.label) == ["Aperçu", "Ouvrir dans Ghostty", "Ouvrir dans VS Code", "Copier les chemins"])
+    #expect(file.map(\.label) == ["Preview", "Open in Ghostty", "Open in VS Code", "Copy paths"])
     let folder = ActionCatalog.folderActions(isDesktop: false, terminal: "Ghostty", editor: "Visual Studio Code")
     #expect(folder.map(\.kind) == [.goUp, .openTerminal, .openEditor, .newFolder, .copyPath])
-    #expect(folder.map(\.label) == ["Remonter d'un niveau", "Ouvrir Ghostty ici", "Ouvrir dans Visual Studio Code",
-                                    "Nouveau dossier", "Copier le chemin du dossier"])
+    #expect(folder.map(\.label) == ["Go up one level", "Open Ghostty here", "Open in Visual Studio Code",
+                                    "New folder", "Copy folder path"])
 }
 
 @Test func desktopHasNowhereToGoUp() {
@@ -65,8 +65,8 @@ private func kinds(_ names: String...) -> [ActionKind] {
 
 @Test func pathCopyPutsOnePathPerLine() {
     #expect(PathCopy.text(for: urls("a b.heic", "c.pdf")) == "/tmp/a b.heic\n/tmp/c.pdf")
-    #expect(PathCopy.summary(count: 1) == "Chemin copié")
-    #expect(PathCopy.summary(count: 3) == "3 chemins copiés")
+    #expect(PathCopy.summary(count: 1) == "Path copied")
+    #expect(PathCopy.summary(count: 3) == "3 paths copied")
 }
 
 @Test func goingUpStartsFromTheFolderShownInTheWindow() {

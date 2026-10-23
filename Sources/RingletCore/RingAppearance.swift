@@ -8,8 +8,8 @@ public enum RingStyle: String, Sendable, CaseIterable, Identifiable {
 
     public var label: String {
         switch self {
-        case .glass: "Verre"
-        case .dial: "Cadran"
+        case .glass: String(localized: "Glass")
+        case .dial: String(localized: "Dial")
         }
     }
 }
@@ -21,15 +21,15 @@ public enum RingAccent: String, Sendable, CaseIterable, Identifiable {
 
     public var label: String {
         switch self {
-        case .system: "Couleur de macOS"
-        case .blue: "Bleu"
-        case .purple: "Violet"
-        case .pink: "Rose"
-        case .red: "Rouge"
-        case .orange: "Orange"
-        case .yellow: "Jaune"
-        case .green: "Vert"
-        case .graphite: "Graphite"
+        case .system: String(localized: "macOS accent color")
+        case .blue: String(localized: "Blue")
+        case .purple: String(localized: "Purple")
+        case .pink: String(localized: "Pink")
+        case .red: String(localized: "Red")
+        case .orange: String(localized: "Orange")
+        case .yellow: String(localized: "Yellow")
+        case .green: String(localized: "Green")
+        case .graphite: String(localized: "Graphite")
         }
     }
 

@@ -46,20 +46,22 @@ public struct ResultSummary: Sendable, Equatable {
         hasFailures = !failed.isEmpty
         switch (created.count, failed.count) {
         case (1, 0):
-            text = "\(created[0].lastPathComponent) créé"
+            text = String(localized: "\(created[0].lastPathComponent) created")
         case (let ok, 0):
-            text = "\(ok) fichiers créés"
+            text = String(localized: "\(ok) files created")
         case (0, 1):
             let name = failed[0].source.lastPathComponent
             switch failed[0].error {
-            case .writeFailed: text = "Impossible d'écrire à côté de \(name)"
-            case .noAudio: text = "\(name) n'a pas de son"
-            default: text = "\(name) est illisible"
+            case .writeFailed: text = String(localized: "Can’t write next to \(name)")
+            case .noAudio: text = String(localized: "\(name) has no audio")
+            default: text = String(localized: "\(name) can’t be read")
             }
         case (0, let ko):
-            text = "\(ko) échecs"
+            text = String(localized: "\(ko) failures")
         case (let ok, let ko):
-            text = "\(ok == 1 ? "1 fichier créé" : "\(ok) fichiers créés"), \(ko == 1 ? "1 échec" : "\(ko) échecs")"
+            let made = ok == 1 ? String(localized: "1 file created") : String(localized: "\(ok) files created")
+            let lost = ko == 1 ? String(localized: "1 failure") : String(localized: "\(ko) failures")
+            text = "\(made), \(lost)"
         }
     }
 }

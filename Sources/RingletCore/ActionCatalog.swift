@@ -37,28 +37,28 @@ public enum ActionCatalog {
     public static func actions(for urls: [URL], terminal: String, editor: String, canGoUp: Bool = false) -> [FileAction] {
         guard !urls.isEmpty else { return [] }
         let types = urls.map { UTType(filenameExtension: $0.pathExtension) }
-        var actions = [FileAction(kind: .quickLook, shortLabel: "Aperçu", symbol: "eye", label: "Aperçu")]
+        var actions = [FileAction(kind: .quickLook, shortLabel: String(localized: "Preview"), symbol: "eye", label: String(localized: "Preview"))]
         if types.allSatisfy({ $0.map(isHEIC) ?? false }) {
-            actions.append(FileAction(kind: .convertToJPEG, shortLabel: "JPG", label: "Convertir en JPG"))
-            actions.append(FileAction(kind: .convertToPNG, shortLabel: "PNG", label: "Convertir en PNG"))
+            actions.append(FileAction(kind: .convertToJPEG, shortLabel: "JPG", label: String(localized: "Convert to JPG")))
+            actions.append(FileAction(kind: .convertToPNG, shortLabel: "PNG", label: String(localized: "Convert to PNG")))
         }
         if types.allSatisfy({ $0.map(MetadataStripper.supports) ?? false }) {
             actions.append(FileAction(kind: .removeGPS, shortLabel: "GPS", symbol: "location.slash",
-                                      label: "Copie sans position GPS"))
+                                      label: String(localized: "Copy without GPS location")))
         }
         if types.allSatisfy({ $0?.conforms(to: .movie) ?? false }) {
             if !types.contains(where: { $0?.conforms(to: .mpeg4Movie) ?? false }) {
-                actions.append(FileAction(kind: .videoToMP4, shortLabel: "MP4", label: "Convertir en MP4"))
+                actions.append(FileAction(kind: .videoToMP4, shortLabel: "MP4", label: String(localized: "Convert to MP4")))
             }
-            actions.append(FileAction(kind: .videoTo720p, shortLabel: "720p", label: "Réduire en 720p"))
-            actions.append(FileAction(kind: .extractAudio, shortLabel: "M4A", symbol: "waveform", label: "Extraire l'audio"))
+            actions.append(FileAction(kind: .videoTo720p, shortLabel: "720p", label: String(localized: "Shrink to 720p")))
+            actions.append(FileAction(kind: .extractAudio, shortLabel: "M4A", symbol: "waveform", label: String(localized: "Extract audio")))
         }
-        actions.append(FileAction(kind: .openTerminal, shortLabel: "Terminal", symbol: "terminal",
-                                  label: "Ouvrir dans \(terminal)"))
-        actions.append(FileAction(kind: .openEditor, shortLabel: "Éditeur", symbol: "chevron.left.forwardslash.chevron.right",
-                                  label: "Ouvrir dans \(editor)"))
-        actions.append(FileAction(kind: .copyPath, shortLabel: "Chemin", symbol: "doc.on.clipboard",
-                                  label: urls.count == 1 ? "Copier le chemin" : "Copier les chemins"))
+        actions.append(FileAction(kind: .openTerminal, shortLabel: String(localized: "Terminal"), symbol: "terminal",
+                                  label: String(localized: "Open in \(terminal)")))
+        actions.append(FileAction(kind: .openEditor, shortLabel: String(localized: "Editor"),
+                                  symbol: "chevron.left.forwardslash.chevron.right", label: String(localized: "Open in \(editor)")))
+        actions.append(FileAction(kind: .copyPath, shortLabel: String(localized: "Path"), symbol: "doc.on.clipboard",
+                                  label: urls.count == 1 ? String(localized: "Copy path") : String(localized: "Copy paths")))
         if canGoUp { actions.append(goUp) }
         return actions
     }
@@ -70,16 +70,20 @@ public enum ActionCatalog {
             actions.append(goUp)
         }
         actions += [
-            FileAction(kind: .openTerminal, shortLabel: "Terminal", symbol: "terminal", label: "Ouvrir \(terminal) ici"),
-            FileAction(kind: .openEditor, shortLabel: "Éditeur", symbol: "chevron.left.forwardslash.chevron.right",
-                       label: "Ouvrir dans \(editor)"),
-            FileAction(kind: .newFolder, shortLabel: "Dossier", symbol: "folder.badge.plus", label: "Nouveau dossier"),
-            FileAction(kind: .copyPath, shortLabel: "Chemin", symbol: "doc.on.clipboard", label: "Copier le chemin du dossier"),
+            FileAction(kind: .openTerminal, shortLabel: String(localized: "Terminal"), symbol: "terminal",
+                       label: String(localized: "Open \(terminal) here")),
+            FileAction(kind: .openEditor, shortLabel: String(localized: "Editor"), symbol: "chevron.left.forwardslash.chevron.right",
+                       label: String(localized: "Open in \(editor)")),
+            FileAction(kind: .newFolder, shortLabel: String(localized: "Folder"), symbol: "folder.badge.plus",
+                       label: String(localized: "New folder")),
+            FileAction(kind: .copyPath, shortLabel: String(localized: "Path"), symbol: "doc.on.clipboard",
+                       label: String(localized: "Copy folder path")),
         ]
         return actions
     }
 
-    static let goUp = FileAction(kind: .goUp, shortLabel: "Haut", symbol: "arrow.up", label: "Remonter d'un niveau")
+    static let goUp = FileAction(kind: .goUp, shortLabel: String(localized: "Up"), symbol: "arrow.up",
+                                 label: String(localized: "Go up one level"))
 
     static func isHEIC(_ type: UTType) -> Bool { type.conforms(to: .heic) || type.conforms(to: .heif) }
 }
@@ -107,5 +111,5 @@ public enum FolderTargets {
 public enum PathCopy {
     public static func text(for urls: [URL]) -> String { urls.map(\.path).joined(separator: "\n") }
 
-    public static func summary(count: Int) -> String { count == 1 ? "Chemin copié" : "\(count) chemins copiés" }
+    public static func summary(count: Int) -> String { count == 1 ? String(localized: "Path copied") : String(localized: "\(count) paths copied") }
 }

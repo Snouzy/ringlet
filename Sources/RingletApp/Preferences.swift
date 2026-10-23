@@ -9,11 +9,11 @@ enum MouseTrigger: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .none: "Aucun"
-        case .holdRight: "Clic droit maintenu (dans le Finder)"
-        case .middle: "Bouton central"
-        case .button4: "Bouton 4 (latéral arrière)"
-        case .button5: "Bouton 5 (latéral avant)"
+        case .none: String(localized: "None")
+        case .holdRight: String(localized: "Right-click hold (in the Finder)")
+        case .middle: String(localized: "Middle button")
+        case .button4: String(localized: "Button 4 (side, back)")
+        case .button5: String(localized: "Button 5 (side, forward)")
         }
     }
 

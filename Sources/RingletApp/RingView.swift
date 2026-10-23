@@ -185,7 +185,7 @@ private struct RingFaceContent: View {
     }
 
     @ViewBuilder private var caption: some View {
-        if let text = hotIndex.map({ actions[$0].label }) ?? (cancelHot ? "Annuler" : nil) {
+        if let text = hotIndex.map({ actions[$0].label }) ?? (cancelHot ? String(localized: "Cancel") : nil) {
             // Pastille pleine de la couleur du secteur visé (rouge pour annuler) : lisible sur n'importe quel fond.
             let fill = cancelHot ? Color.red : accent
             Text(text)

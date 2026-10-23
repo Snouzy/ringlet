@@ -73,7 +73,7 @@ private func tempDir() throws -> URL {
     let result = await VideoExporter.export(source, as: .audio)
     #expect(result.output == nil)
     #expect(result.error == .noAudio)
-    #expect(ResultSummary(results: [result]).text == "muet.mov n'a pas de son")
+    #expect(ResultSummary(results: [result]).text == "muet.mov has no audio")
 }
 
 @Test func unreadableVideoFails() async throws {

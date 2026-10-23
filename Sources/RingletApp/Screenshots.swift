@@ -11,7 +11,7 @@ import SwiftUI
         let dir = URL(fileURLWithPath: args[flag + 1], isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
 
-        let photo = [URL(fileURLWithPath: "/Users/exemple/Desktop/vacances/IMG_8271.HEIC")]
+        let photo = [URL(fileURLWithPath: "/Users/example/Desktop/vacation/IMG_8271.HEIC")]
         let photoActions = ActionCatalog.actions(for: photo, terminal: "Ghostty", editor: "Visual Studio Code", canGoUp: true)
         let folderActions = ActionCatalog.folderActions(isDesktop: false, terminal: "Ghostty", editor: "Visual Studio Code")
 
@@ -24,6 +24,8 @@ import SwiftUI
         let prefs = Preferences(defaults: UserDefaults(suiteName: "io.snouzy.ringlet.screenshots") ?? .standard)
         render(SettingsShot(prefs: prefs), size: CGSize(width: SettingsWindow.width, height: 748), dark: true,
                to: dir.appendingPathComponent("settings.png"))
+        render(SocialCard(actions: photoActions), size: CGSize(width: 1280, height: 640), dark: true,
+               to: dir.appendingPathComponent("social.png"))
         exit(0)
     }
 
@@ -65,6 +67,33 @@ private struct Scene: View {
     }
 }
 
+/// Aperçu social du dépôt (Settings › Social preview sur GitHub) : 1280 × 640, le nom à gauche, l'anneau à droite.
+private struct SocialCard: View {
+    var actions: [FileAction]
+
+    var body: some View {
+        ZStack {
+            Backdrop(dark: true)
+            HStack(spacing: 40) {
+                VStack(alignment: .leading, spacing: 18) {
+                    Text(verbatim: "Ringlet").font(.system(size: 96, weight: .bold)).foregroundStyle(.white)
+                    Text(verbatim: "A radial pie menu\nfor the macOS Finder").font(.system(size: 40, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.9))
+                    Text(verbatim: "HEIC to JPG · strip GPS · shrink videos\nQuick Look · Terminal · VS Code")
+                        .font(.system(size: 22, weight: .medium)).foregroundStyle(.white.opacity(0.6))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                RingFace(actions: actions, geometry: .standard(count: actions.count, size: .large), hot: 1,
+                         cancelHot: false, isOpen: true, look: RingLook(style: .glass))
+                    .scaleEffect(1.4)
+                    .frame(width: 460, height: 560)
+            }
+            .padding(.horizontal, 80)
+        }
+    }
+}
+
 /// Les deux styles, en clair et en sombre.
 private struct StylesBoard: View {
     var actions: [FileAction]
@@ -98,7 +127,7 @@ private struct SettingsShot: View {
         VStack(spacing: 0) {
             VStack(spacing: 6) {
                 ZStack {
-                    Text("Apparence").font(.system(size: 13, weight: .semibold))
+                    Text("Appearance").font(.system(size: 13, weight: .semibold))
                     HStack(spacing: 8) {
                         ForEach([Color(red: 1, green: 0.37, blue: 0.34), Color(red: 1, green: 0.74, blue: 0.18), Color(red: 0.16, green: 0.78, blue: 0.25)], id: \.self) {
                             Circle().fill($0).frame(width: 12, height: 12)
@@ -110,7 +139,7 @@ private struct SettingsShot: View {
                 .frame(height: 28)
                 HStack(spacing: 4) {
                     ForEach(SettingsWindow.sections, id: \.title) { section in
-                        let isOn = section.title == "Apparence"
+                        let isOn = section.title == String(localized: "Appearance")
                         VStack(spacing: 3) {
                             Image(systemName: section.symbol).font(.system(size: 18))
                             Text(section.title).font(.system(size: 11))
@@ -161,14 +190,14 @@ private struct Backdrop: View {
 private struct MockFinder: View {
     var selected: Int?
     private let rows: [(String, String, String, String, Bool)] = [
-        ("IMG_8268.HEIC", "aujourd'hui à 10:12", "2,1 Mo", "Image HEIF", false),
-        ("IMG_8271.HEIC", "aujourd'hui à 10:14", "1,5 Mo", "Image HEIF", false),
-        ("IMG_8274.HEIC", "aujourd'hui à 10:21", "1,8 Mo", "Image HEIF", false),
-        ("plage.MOV", "hier à 18:40", "84,2 Mo", "Film QuickTime", false),
-        ("itinéraire.pdf", "hier à 09:03", "312 ko", "Document PDF", false),
-        ("notes", "12 août 2026 à 22:15", "--", "Dossier", true),
-        ("IMG_8201.jpg", "11 août 2026 à 16:47", "2,4 Mo", "Image JPEG", false),
-        ("IMG_8202.jpg", "11 août 2026 à 16:48", "2,2 Mo", "Image JPEG", false),
+        ("IMG_8268.HEIC", "Today at 10:12", "2.1 MB", "HEIF Image", false),
+        ("IMG_8271.HEIC", "Today at 10:14", "1.5 MB", "HEIF Image", false),
+        ("IMG_8274.HEIC", "Today at 10:21", "1.8 MB", "HEIF Image", false),
+        ("beach.MOV", "Yesterday at 18:40", "84.2 MB", "QuickTime movie", false),
+        ("itinerary.pdf", "Yesterday at 09:03", "312 KB", "PDF document", false),
+        ("notes", "Aug 12, 2026 at 22:15", "--", "Folder", true),
+        ("IMG_8201.jpg", "Aug 11, 2026 at 16:47", "2.4 MB", "JPEG image", false),
+        ("IMG_8202.jpg", "Aug 11, 2026 at 16:48", "2.2 MB", "JPEG image", false),
     ]
 
     var body: some View {
@@ -197,14 +226,14 @@ private struct MockFinder: View {
                 }
             }
             .padding(.bottom, 10)
-            Text("Favoris").font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
-            ForEach([("clock", "Récents"), ("square.grid.2x2", "Applications"), ("menubar.dock.rectangle", "Bureau"),
-                     ("doc", "Documents"), ("arrow.down.circle", "Téléchargements"), ("photo", "Images")], id: \.1) { symbol, name in
-                Label(name, systemImage: symbol).font(.system(size: 13)).foregroundStyle(name == "Bureau" ? Color.accentColor : .primary)
+            Text(verbatim: "Favorites").font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
+            ForEach([("clock", "Recents"), ("square.grid.2x2", "Applications"), ("menubar.dock.rectangle", "Desktop"),
+                     ("doc", "Documents"), ("arrow.down.circle", "Downloads"), ("photo", "Pictures")], id: \.1) { symbol, name in
+                Label(name, systemImage: symbol).font(.system(size: 13)).foregroundStyle(name == "Desktop" ? Color.accentColor : .primary)
             }
-            Text("Emplacements").font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary).padding(.top, 6)
-            Label("iCloud Drive", systemImage: "icloud").font(.system(size: 13))
-            Label("Macintosh HD", systemImage: "internaldrive").font(.system(size: 13))
+            Text(verbatim: "Locations").font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary).padding(.top, 6)
+            Label { Text(verbatim: "iCloud Drive") } icon: { Image(systemName: "icloud") }.font(.system(size: 13))
+            Label { Text(verbatim: "Macintosh HD") } icon: { Image(systemName: "internaldrive") }.font(.system(size: 13))
             Spacer()
         }
         .padding(16)
@@ -216,7 +245,7 @@ private struct MockFinder: View {
         HStack(spacing: 14) {
             Image(systemName: "chevron.left").foregroundStyle(.secondary)
             Image(systemName: "chevron.right").foregroundStyle(.tertiary)
-            Text("vacances").font(.system(size: 14, weight: .bold))
+            Text(verbatim: "vacation").font(.system(size: 14, weight: .bold))
             Spacer()
             Image(systemName: "list.bullet")
             Image(systemName: "square.and.arrow.up")
@@ -228,7 +257,7 @@ private struct MockFinder: View {
     }
 
     private var header: some View {
-        columns("Nom", "Date de modification", "Taille", "Type")
+        columns("Name", "Date Modified", "Size", "Kind")
             .font(.system(size: 11, weight: .medium))
             .foregroundStyle(.secondary)
             .padding(.vertical, 6)

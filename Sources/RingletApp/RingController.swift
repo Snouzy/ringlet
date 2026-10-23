@@ -101,10 +101,10 @@ enum RingTarget: Equatable {
         switch resolved {
         case .success(let resolved): show(resolved, at: point)
         case .failure(.notAuthorized):
-            showMessage("Autorise Ringlet dans Réglages Système › Confidentialité › Automatisation › Finder",
+            showMessage(String(localized: "Allow Ringlet in System Settings › Privacy & Security › Automation › Finder"),
                         isError: true, at: point, duration: 4)
         case .failure(.failed):
-            showMessage("Impossible de lire le Finder", isError: true, at: point)
+            showMessage(String(localized: "Can’t read the Finder"), isError: true, at: point)
         }
     }
 
@@ -141,7 +141,7 @@ enum RingTarget: Equatable {
         case .folder(_, let isDesktop):
             actions = ActionCatalog.folderActions(isDesktop: isDesktop, terminal: terminal.name, editor: editor.name)
         }
-        guard !actions.isEmpty else { return showMessage("Aucune action ici", isError: true, at: point) }
+        guard !actions.isEmpty else { return showMessage(String(localized: "No action here"), isError: true, at: point) }
 
         target = resolved
         hasAimed = false
@@ -269,7 +269,8 @@ enum RingTarget: Equatable {
     private func createFiles(_ kind: ActionKind, from files: [URL], messageAt center: CGPoint) {
         let quality = jpegQuality
         if kind.videoPreset != nil {
-            showMessage(files.count == 1 ? "Export de \(files[0].lastPathComponent)…" : "Export de \(files.count) vidéos…",
+            showMessage(files.count == 1 ? String(localized: "Exporting \(files[0].lastPathComponent)…")
+                                       : String(localized: "Exporting \(files.count) videos…"),
                         isError: false, at: center, busy: true)
         }
         Task { [weak self] in
@@ -283,15 +284,15 @@ enum RingTarget: Equatable {
 
     private func open(_ folders: [URL], with app: AppChoice, messageAt center: CGPoint) {
         guard let appURL = app.url else {
-            return showMessage("\(app.name) introuvable : choisis une autre app dans les réglages", isError: true, at: center)
+            return showMessage(String(localized: "\(app.name) not found: pick another app in Settings"), isError: true, at: center)
         }
         NSWorkspace.shared.open(folders, withApplicationAt: appURL, configuration: NSWorkspace.OpenConfiguration())
     }
 
     private func report(_ result: Result<Void, FinderScript.Failure>, at center: CGPoint) {
         guard case .failure(let failure) = result else { return }
-        showMessage(failure == .notAuthorized ? "Autorise Ringlet à piloter le Finder dans Réglages Système"
-                                              : "Le Finder n'a pas pu le faire", isError: true, at: center)
+        showMessage(failure == .notAuthorized ? String(localized: "Allow Ringlet to control the Finder in System Settings")
+                                              : String(localized: "The Finder couldn’t do it"), isError: true, at: center)
     }
 
     private static func pressReturn() {

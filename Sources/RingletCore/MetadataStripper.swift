@@ -19,7 +19,7 @@ public enum MetadataStripper {
         let metadata = original.flatMap(CGImageMetadataCreateMutableCopy) ?? CGImageMetadataCreateMutable()
         for path in gpsTagPaths(in: metadata) { CGImageMetadataRemoveTagWithPath(metadata, nil, path as CFString) }
 
-        let output = OutputNaming.destination(for: source, fileExtension: source.pathExtension, suffix: "-sans-gps")
+        let output = OutputNaming.destination(for: source, fileExtension: source.pathExtension, suffix: String(localized: "-no-gps", comment: "Suffixe du nom de la copie sans GPS"))
         let temporary = OutputNaming.temporary(beside: output)
         guard let destination = CGImageDestinationCreateWithURL(temporary as CFURL, type, 1, nil) else { throw .writeFailed }
         let options: [CFString: Any] = [kCGImageDestinationMetadata: metadata, kCGImageDestinationMergeMetadata: false]

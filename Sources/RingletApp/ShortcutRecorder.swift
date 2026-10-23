@@ -10,7 +10,7 @@ struct ShortcutRecorder: View {
     @State private var monitor: Any?
 
     var body: some View {
-        Button(isRecording ? "Tape le raccourci…" : combo.label) { isRecording ? stop() : start() }
+        Button(isRecording ? String(localized: "Type the shortcut…") : combo.title) { isRecording ? stop() : start() }
             .frame(minWidth: 150)
             .onDisappear(perform: stop)
     }
@@ -46,8 +46,8 @@ struct ShortcutRecorder: View {
 
     private static func keyName(_ event: NSEvent) -> String {
         switch Int(event.keyCode) {
-        case kVK_Space: "Espace"
-        case kVK_Return: "Entrée"
+        case kVK_Space: "Space"
+        case kVK_Return: "Return"
         case kVK_Tab: "Tab"
         case kVK_Delete: "⌫"
         case kVK_LeftArrow: "←"

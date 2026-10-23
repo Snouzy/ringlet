@@ -10,11 +10,11 @@ enum SettingsWindow {
 
     /// Rubriques, dans l'ordre de la barre d'outils.
     static let sections: [(title: String, symbol: String)] = [
-        ("Général", "gearshape"),
-        ("Apparence", "paintpalette"),
-        ("Déclencheurs", "cursorarrow.click.2"),
-        ("Actions", "circle.grid.cross"),
-        ("Autorisations", "lock.shield"),
+        (String(localized: "General"), "gearshape"),
+        (String(localized: "Appearance"), "paintpalette"),
+        (String(localized: "Triggers"), "cursorarrow.click.2"),
+        (String(localized: "Actions"), "circle.grid.cross"),
+        (String(localized: "Permissions"), "lock.shield"),
     ]
 
     @MainActor static func make(prefs: Preferences, hotKeyRegistered: @escaping () -> Bool,
@@ -57,15 +57,15 @@ private struct GeneralTab: View {
         Form {
             Section {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Sélectionne des fichiers dans le Finder, maintiens \(prefs.shortcut.label), pars vers une action et relâche.")
-                    Text("Relâcher sans viser laisse l'anneau ouvert : un clic choisit, Échap ferme.")
+                    Text("Select files in the Finder, hold \(prefs.shortcut.title), move toward an action and let go.")
+                    Text("Let go without aiming and the ring stays open: click to choose, Esc to close.")
                         .foregroundStyle(.secondary)
                 }
                 .font(.callout)
                 .padding(.vertical, 4)
             }
             Section {
-                Toggle("Lancer Ringlet à l'ouverture de session", isOn: Binding(get: { launchAtLogin }, set: setLaunchAtLogin))
+                Toggle("Open Ringlet at login", isOn: Binding(get: { launchAtLogin }, set: setLaunchAtLogin))
                     .disabled(!isBundled)
             }
         }
@@ -101,27 +101,27 @@ struct AppearanceTab: View {
                 .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Color.primary.opacity(0.1), lineWidth: 0.5))
                 .padding([.horizontal, .top], 20)
             Form {
-                Section("Anneau") {
+                Section("Ring") {
                     Picker("Style", selection: $prefs.ringStyle) {
                         ForEach(RingStyle.allCases) { Text($0.label).tag($0) }
                     }
                     .pickerStyle(.segmented)
-                    Picker("Taille", selection: $prefs.ringSize) {
+                    Picker("Size", selection: $prefs.ringSize) {
                         ForEach(RingSize.allCases) { Text($0.label).tag($0) }
                     }
-                    LabeledContent("Couleur") { AccentPicker(accent: $prefs.accent) }
+                    LabeledContent("Color") { AccentPicker(accent: $prefs.accent) }
                     if prefs.ringStyle == .glass {
-                        LabeledContent("Opacité du verre") {
+                        LabeledContent("Glass opacity") {
                             HStack {
                                 Slider(value: $prefs.glassOpacity, in: GlassOpacity.range, step: 0.01).frame(width: 110)
-                                Text("\(Int((prefs.glassOpacity * 100).rounded())) %").monospacedDigit().frame(width: 40, alignment: .trailing)
+                                Text("\(Int((prefs.glassOpacity * 100).rounded()))%").monospacedDigit().frame(width: 40, alignment: .trailing)
                             }
                         }
                     }
                 }
                 Section {
-                    Toggle("Réduire les animations", isOn: $prefs.reduceMotion)
-                    Button("Rejouer l'ouverture", action: replay)
+                    Toggle("Reduce motion", isOn: $prefs.reduceMotion)
+                    Button("Replay opening", action: replay)
                 }
             }
             .formStyle(.grouped)
@@ -150,7 +150,7 @@ struct AppearanceTab: View {
             }
         }
         .clipped()
-        .accessibilityLabel("Aperçu de l'anneau")
+        .accessibilityLabel("Ring preview")
     }
 
     private func replay() {
@@ -171,7 +171,8 @@ private struct Wallpaper: View {
             LinearGradient(colors: colors, startPoint: .topLeading, endPoint: .bottomTrailing)
             // Quelques lignes de fichiers, comme une fenêtre du Finder derrière l'anneau.
             VStack(alignment: .leading, spacing: 7) {
-                ForEach(["IMG_8271-sans-gps.HEIC", "IMG_8271.HEIC", "IMG_8271.jpg", "IMG_8271.png", "plage-ete.HEIC"], id: \.self) { name in
+                ForEach(["IMG_8271\(String(localized: "-no-gps")).HEIC", "IMG_8271.HEIC", "IMG_8271.jpg", "IMG_8271.png",
+                         String(localized: "beach-summer.HEIC")], id: \.self) { name in
                     Text(name)
                         .font(.system(size: 11))
                         .padding(.horizontal, 6).padding(.vertical, 2)
@@ -224,34 +225,34 @@ private struct TriggersTab: View {
 
     var body: some View {
         Form {
-            Section("Clavier") {
-                LabeledContent("Raccourci à maintenir") {
+            Section("Keyboard") {
+                LabeledContent("Shortcut to hold") {
                     ShortcutRecorder(combo: $prefs.shortcut, onRecording: onRecordingShortcut)
                 }
                 if !hotKeyRegistered() {
-                    Text("Ce raccourci est déjà pris par macOS ou une autre app : choisis-en un autre.")
+                    Text("macOS or another app already uses this shortcut: pick another one.")
                         .foregroundStyle(.orange).font(.callout)
                 }
             }
-            Section("Souris") {
-                Picker("Bouton", selection: $prefs.mouseTrigger) {
+            Section("Mouse") {
+                Picker("Button", selection: $prefs.mouseTrigger) {
                     ForEach(MouseTrigger.allCases) { Text($0.label).tag($0) }
                 }
                 if prefs.mouseTrigger == .holdRight {
-                    LabeledContent("Délai avant l'anneau") {
+                    LabeledContent("Delay before the ring") {
                         HStack {
                             Slider(value: $prefs.holdDelay, in: 0.15...0.6, step: 0.01).frame(width: 160)
                             Text("\(Int(prefs.holdDelay * 1000)) ms").monospacedDigit().frame(width: 56, alignment: .trailing)
                         }
                     }
-                    Text("Un clic droit rapide garde le menu habituel du Finder.").foregroundStyle(.secondary).font(.callout)
+                    Text("A quick right-click still opens the usual Finder menu.").foregroundStyle(.secondary).font(.callout)
                 }
                 if prefs.mouseTrigger != .none && !trusted {
                     HStack {
-                        Label("La souris a besoin de l'autorisation Accessibilité.", systemImage: "exclamationmark.triangle.fill")
+                        Label("The mouse needs the Accessibility permission.", systemImage: "exclamationmark.triangle.fill")
                             .foregroundStyle(.orange)
                         Spacer()
-                        Button("Autoriser…") {
+                        Button("Allow…") {
                             Permissions.requestAccessibility()
                             Permissions.openAccessibilitySettings()
                         }
@@ -272,16 +273,16 @@ private struct ActionsTab: View {
         Form {
             Section("Apps") {
                 AppPicker(title: "Terminal", choice: $prefs.terminal, candidates: AppChoice.terminals)
-                AppPicker(title: "Éditeur", choice: $prefs.editor, candidates: AppChoice.editors)
+                AppPicker(title: "Editor", choice: $prefs.editor, candidates: AppChoice.editors)
             }
             Section("Photos") {
-                LabeledContent("Qualité des JPG") {
+                LabeledContent("JPG quality") {
                     HStack {
                         Slider(value: $prefs.jpegQuality, in: 0.5...1, step: 0.05).frame(width: 180)
-                        Text("\(Int((prefs.jpegQuality * 100).rounded())) %").monospacedDigit().frame(width: 44, alignment: .trailing)
+                        Text("\(Int((prefs.jpegQuality * 100).rounded()))%").monospacedDigit().frame(width: 44, alignment: .trailing)
                     }
                 }
-                Text("Les fichiers créés (JPG, PNG, copie sans GPS, vidéos) vont à côté des originaux, qui ne sont jamais modifiés.")
+                Text("Created files (JPG, PNG, copies without GPS, videos) go next to the originals, which are never modified.")
                     .foregroundStyle(.secondary).font(.callout)
             }
         }
@@ -291,7 +292,7 @@ private struct ActionsTab: View {
 
 /// Liste des apps installées connues, plus « Autre… » pour en choisir une dans /Applications.
 private struct AppPicker: View {
-    let title: String
+    let title: LocalizedStringKey
     @Binding var choice: AppChoice
     let candidates: [AppChoice]
 
@@ -302,7 +303,7 @@ private struct AppPicker: View {
         })) {
             ForEach(options) { Text($0.name).tag($0.bundleID) }
             Divider()
-            Text("Autre…").tag("autre")
+            Text("Other…").tag("autre")
         }
     }
 }
@@ -315,16 +316,16 @@ private struct PermissionsTab: View {
     var body: some View {
         Form {
             Section {
-                row("Finder (Automatisation)", "Lire les fichiers sélectionnés. Demandée au premier usage de l'anneau.",
+                row("Finder (Automation)", "Reads the selected files. Asked the first time you open the ring.",
                     state: finder, action: Permissions.openAutomationSettings)
-                row("Accessibilité", "Seulement pour ouvrir l'anneau à la souris (clic droit maintenu, boutons).",
+                row("Accessibility", "Only to open the ring with the mouse (right-click hold, buttons).",
                     state: accessibility) {
                     Permissions.requestAccessibility()
                     Permissions.openAccessibilitySettings()
                 }
             }
             Section {
-                Text("Ringlet ne se connecte à rien : tout se passe sur ton Mac.").foregroundStyle(.secondary).font(.callout)
+                Text("Ringlet connects to nothing: everything happens on your Mac.").foregroundStyle(.secondary).font(.callout)
             }
         }
         .formStyle(.grouped)
@@ -334,7 +335,7 @@ private struct PermissionsTab: View {
         }
     }
 
-    private func row(_ title: String, _ detail: String, state: Permissions.State, action: @escaping () -> Void) -> some View {
+    private func row(_ title: LocalizedStringKey, _ detail: LocalizedStringKey, state: Permissions.State, action: @escaping () -> Void) -> some View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
@@ -342,9 +343,9 @@ private struct PermissionsTab: View {
             }
             Spacer()
             switch state {
-            case .granted: Label("Accordée", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
-            case .denied: Button("Refusée — ouvrir les réglages", action: action)
-            case .notAsked, .unknown: Button("Ouvrir les réglages", action: action)
+            case .granted: Label("Granted", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+            case .denied: Button("Denied — open System Settings", action: action)
+            case .notAsked, .unknown: Button("Open System Settings", action: action)
             }
         }
     }

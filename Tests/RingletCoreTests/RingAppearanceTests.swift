@@ -14,5 +14,5 @@ import Testing
 
 @Test func stylesSurviveTheirSavedName() {
     #expect(RingStyle.allCases.map { RingStyle(rawValue: $0.rawValue) } == [.glass, .dial])
-    #expect(RingStyle.allCases.map(\.label) == ["Verre", "Cadran"])
+    #expect(RingStyle.allCases.map(\.label) == ["Glass", "Dial"])
 }

@@ -61,9 +61,9 @@ public enum RingSize: String, Sendable, CaseIterable, Identifiable {
     }
     public var label: String {
         switch self {
-        case .small: "Petit"
-        case .medium: "Moyen"
-        case .large: "Grand"
+        case .small: String(localized: "Small")
+        case .medium: String(localized: "Medium")
+        case .large: String(localized: "Large")
         }
     }
 }

@@ -96,15 +96,15 @@ private struct MenuContent: View {
 
     var body: some View {
         if delegate.hotKeyRegistered {
-            Text("Maintiens \(delegate.prefs.shortcut.label) sur des fichiers du Finder")
+            Text("Hold \(delegate.prefs.shortcut.title) on files in the Finder")
         } else {
-            Text("\(delegate.prefs.shortcut.label) est déjà pris : change-le dans les réglages")
+            Text("\(delegate.prefs.shortcut.title) is already taken: change it in Settings")
         }
         Divider()
-        Button("Réglages…") { delegate.showSettings() }
+        Button("Settings…") { delegate.showSettings() }
             .keyboardShortcut(",")
         Divider()
-        Button("Quitter Ringlet") { NSApplication.shared.terminate(nil) }
+        Button("Quit Ringlet") { NSApplication.shared.terminate(nil) }
             .keyboardShortcut("q")
     }
 }

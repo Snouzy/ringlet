@@ -5,7 +5,12 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 echo "==> Compilation (release)"
-swift build -c release
+# Le compilateur relève les textes à traduire ; le catalogue les reçoit (sans traduction pour les nouveaux,
+# ce que signale LocalizationTests).
+STRINGS=".build/localized-strings"
+mkdir -p "$STRINGS"
+swift build -c release -Xswiftc -emit-localized-strings -Xswiftc -emit-localized-strings-path -Xswiftc "$STRINGS"
+xcrun xcstringstool sync Resources/Localizable.xcstrings --stringsdata "$STRINGS"/*.stringsdata
 BIN="$(swift build -c release --show-bin-path)"
 
 APP="build/Ringlet.app"
@@ -14,11 +19,20 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN/RingletApp" "$APP/Contents/MacOS/Ringlet"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 
+# Langues : anglais de base (dans le code), français dans le catalogue et dans Resources/fr.lproj.
+mkdir -p "$APP/Contents/Resources/en.lproj"
+xcrun xcstringstool compile Resources/Localizable.xcstrings --output-directory "$APP/Contents/Resources"
+cp Resources/fr.lproj/*.strings "$APP/Contents/Resources/fr.lproj/"
+
 cat > "$APP/Contents/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+  <key>CFBundleDevelopmentRegion</key>
+  <string>en</string>
+  <key>CFBundleLocalizations</key>
+  <array><string>en</string><string>fr</string></array>
   <key>CFBundleIdentifier</key>
   <string>io.snouzy.ringlet</string>
   <key>CFBundleName</key>
@@ -45,7 +59,7 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
   <array>
     <dict>
       <key>NSMenuItem</key>
-      <dict><key>default</key><string>Convertir en JPG avec Ringlet</string></dict>
+      <dict><key>default</key><string>Convert to JPG with Ringlet</string></dict>
       <key>NSMessage</key>
       <string>convertToJPEG</string>
       <key>NSPortName</key>
@@ -57,7 +71,7 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
     </dict>
     <dict>
       <key>NSMenuItem</key>
-      <dict><key>default</key><string>Convertir en PNG avec Ringlet</string></dict>
+      <dict><key>default</key><string>Convert to PNG with Ringlet</string></dict>
       <key>NSMessage</key>
       <string>convertToPNG</string>
       <key>NSPortName</key>
@@ -69,7 +83,7 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
     </dict>
   </array>
   <key>NSAppleEventsUsageDescription</key>
-  <string>Ringlet lit les fichiers sélectionnés dans le Finder pour proposer les actions de l'anneau.</string>
+  <string>Ringlet reads the files selected in the Finder to offer the ring's actions.</string>
 </dict>
 </plist>
 PLIST
