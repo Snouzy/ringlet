@@ -50,6 +50,9 @@ enum RingTarget: Equatable {
     private let model = RingModel()
     private let panel = RingPanel()
     private var target = RingTarget.files([])
+    /// Chemin du presse-papiers montré par « Afficher le chemin copié », lu à l'ouverture de l'anneau.
+    private var copiedPath: (url: URL, reveal: ClipboardPath.Reveal)?
+    private let copiedPaths = CopiedPathMemory()
     private var isHolding = false
     private var hasAimed = false
     private var monitors: [Any] = []
@@ -59,6 +62,7 @@ enum RingTarget: Equatable {
         let host = NSHostingView(rootView: RingView(model: model))
         host.sizingOptions = []
         panel.contentView = host
+        copiedPaths.start()
     }
 
     var isOpen: Bool { model.showsRing }
@@ -140,7 +144,7 @@ enum RingTarget: Equatable {
 
     private func show(_ resolved: RingTarget, at point: CGPoint) {
         log.notice("Anneau en \(point.x), \(point.y) dans un panneau de \(self.panel.frame.width)×\(self.panel.frame.height)")
-        let actions: [FileAction]
+        var actions: [FileAction]
         switch resolved {
         case .files(let urls):
             let desktop = FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first?.standardizedFileURL.path
@@ -150,6 +154,10 @@ enum RingTarget: Equatable {
             actions = ActionCatalog.folderActions(isDesktop: isDesktop, terminal: terminal.name, editor: editor.name)
         case .app(let app):
             actions = SnippetCatalog.actions(for: SnippetCatalog.snippets(snippets, forApp: app))
+        }
+        copiedPath = readCopiedPath()
+        if let copied = copiedPath {
+            actions.append(ClipboardPath.action(for: copied.url, opensFolder: copied.reveal == .openFolder))
         }
         guard !actions.isEmpty else { return showMessage(String(localized: "No action here"), isError: true, at: point) }
 
@@ -259,6 +267,8 @@ enum RingTarget: Equatable {
             open(urls, with: editor, messageAt: center)
         case .quickLook:
             QuickLook.shared.show(urls)
+        case .revealCopiedPath:
+            if let copied = copiedPath { reveal(copied.url, copied.reveal, messageAt: center) }
         case .goUp:
             // Comme ⌘↑ dans la fenêtre qui montre l'élément, fichier ou dossier ; pour l'anneau d'un dossier,
             // l'élément est ce dossier, que montre sa propre fenêtre.
@@ -310,6 +320,30 @@ enum RingTarget: Equatable {
             return showMessage(String(localized: "\(app.name) not found: pick another app in Settings"), isError: true, at: center)
         }
         NSWorkspace.shared.open(folders, withApplicationAt: appURL, configuration: NSWorkspace.OpenConfiguration())
+    }
+
+    /// Chemin à montrer (presse-papiers, sinon le dernier copié) et ce qu'en fait le Finder.
+    private func readCopiedPath() -> (url: URL, reveal: ClipboardPath.Reveal)? {
+        guard let url = copiedPaths.latest else { return nil }
+        var isFolder: ObjCBool = false
+        FileManager.default.fileExists(atPath: url.path, isDirectory: &isFolder)
+        let reveal = ClipboardPath.reveal(url, isFolder: isFolder.boolValue,
+                                          isPackage: NSWorkspace.shared.isFilePackage(atPath: url.path))
+        return (url, reveal)
+    }
+
+    /// Jamais `open` sur l'élément lui-même : un fichier lancerait l'aperçu, une app se lancerait.
+    private func reveal(_ url: URL, _ reveal: ClipboardPath.Reveal, messageAt center: CGPoint) {
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            return showMessage(String(localized: "The copied path no longer exists"), isError: true, at: center)
+        }
+        switch reveal {
+        case .selectInFolder:
+            NSWorkspace.shared.activateFileViewerSelecting([url])
+        case .openFolder:
+            guard let finder = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.finder") else { return }
+            NSWorkspace.shared.open([url], withApplicationAt: finder, configuration: NSWorkspace.OpenConfiguration())
+        }
     }
 
     private func report(_ result: Result<Void, FinderScript.Failure>, at center: CGPoint) {

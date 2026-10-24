@@ -372,6 +372,16 @@
         }
       }
     },
+    "Copied": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copié"
+          }
+        }
+      }
+    },
     "Copy folder path": {
       "localizations": {
         "fr": {
@@ -782,6 +792,16 @@
         }
       }
     },
+    "Open “%@” in Finder": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrir « %@ » dans le Finder"
+          }
+        }
+      }
+    },
     "Orange": {
       "localizations": {
         "fr": {
@@ -1063,6 +1083,16 @@
         }
       }
     },
+    "Show “%@” in Finder": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afficher « %@ » dans le Finder"
+          }
+        }
+      }
+    },
     "Shrink to 720p": {
       "localizations": {
         "fr": {
@@ -1150,6 +1180,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Le Finder n'a pas pu le faire"
+          }
+        }
+      }
+    },
+    "The copied path no longer exists": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le chemin copié n’existe plus"
           }
         }
       }

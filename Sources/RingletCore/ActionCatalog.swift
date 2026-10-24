@@ -11,6 +11,7 @@ public enum ActionKind: String, Sendable, CaseIterable {
     case extractAudio
     case openTerminal
     case copyPath
+    case revealCopiedPath
     // Anneau du dossier
     case goUp
     case openEditor
