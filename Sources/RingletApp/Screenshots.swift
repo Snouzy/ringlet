@@ -22,12 +22,25 @@ import SwiftUI
         render(Scene(dark: false, look: RingLook(style: .glass), actions: folderActions, hot: 0, selected: nil),
                size: CGSize(width: 1280, height: 760), dark: false, to: dir.appendingPathComponent("folder.png"))
         let prefs = Preferences(defaults: UserDefaults(suiteName: "io.snouzy.ringlet.screenshots") ?? .standard)
-        render(SettingsShot(prefs: prefs), size: CGSize(width: SettingsWindow.width, height: 748), dark: true,
-               to: dir.appendingPathComponent("settings.png"))
+        render(SettingsShot(selected: String(localized: "Appearance")) { AppearanceTab(prefs: prefs, hot: 1) },
+               size: CGSize(width: SettingsWindow.width, height: 748), dark: true, to: dir.appendingPathComponent("settings.png"))
+        prefs.snippets = Array(Self.snippets.prefix(3))
+        render(TerminalScene(actions: SnippetCatalog.actions(for: Self.snippets)), size: CGSize(width: 1280, height: 760),
+               dark: true, to: dir.appendingPathComponent("texts.png"))
+        render(SettingsShot(selected: String(localized: "Texts")) { TextsTab(prefs: prefs) },
+               size: CGSize(width: SettingsWindow.width, height: 604), dark: true, to: dir.appendingPathComponent("texts-settings.png"))
         render(SocialCard(actions: photoActions), size: CGSize(width: 1280, height: 640), dark: true,
                to: dir.appendingPathComponent("social.png"))
         exit(0)
     }
+
+    private static let snippets = [
+        TextSnippet(label: "Yes, go", text: "Yes, go ahead.", pressReturn: true, apps: ["com.mitchellh.ghostty"]),
+        TextSnippet(label: "Tests first", text: "Run the tests first, then tell me what fails.", pressReturn: true),
+        TextSnippet(label: "Explain", text: "Explain that change in two sentences.", pressReturn: true),
+        TextSnippet(label: "Stop", text: "Stop, don't change anything yet.", pressReturn: true),
+        TextSnippet(label: "Thanks", text: "Thanks, looks good."),
+    ]
 
     private static func render(_ view: some View, size: CGSize, dark: Bool, to url: URL) {
         let host = NSHostingView(rootView: view.frame(width: size.width, height: size.height)
@@ -120,14 +133,15 @@ private struct StylesBoard: View {
 
 /// La rubrique Apparence sous une barre d'outils dessinée comme celle de la vraie fenêtre (la barre d'outils
 /// d'AppKit ne passe pas dans un rendu hors écran).
-private struct SettingsShot: View {
-    var prefs: Preferences
+private struct SettingsShot<Content: View>: View {
+    var selected: String
+    @ViewBuilder var content: Content
 
     var body: some View {
         VStack(spacing: 0) {
             VStack(spacing: 6) {
                 ZStack {
-                    Text("Appearance").font(.system(size: 13, weight: .semibold))
+                    Text(selected).font(.system(size: 13, weight: .semibold))
                     HStack(spacing: 8) {
                         ForEach([Color(red: 1, green: 0.37, blue: 0.34), Color(red: 1, green: 0.74, blue: 0.18), Color(red: 0.16, green: 0.78, blue: 0.25)], id: \.self) {
                             Circle().fill($0).frame(width: 12, height: 12)
@@ -139,13 +153,13 @@ private struct SettingsShot: View {
                 .frame(height: 28)
                 HStack(spacing: 4) {
                     ForEach(SettingsWindow.sections, id: \.title) { section in
-                        let isOn = section.title == String(localized: "Appearance")
+                        let isOn = section.title == selected
                         VStack(spacing: 3) {
                             Image(systemName: section.symbol).font(.system(size: 18))
                             Text(section.title).font(.system(size: 11))
                         }
                         .foregroundStyle(isOn ? Color.accentColor : .secondary)
-                        .frame(minWidth: 70)
+                        .frame(minWidth: 66)
                         .padding(.vertical, 5)
                         .background(isOn ? Color.primary.opacity(0.08) : .clear, in: RoundedRectangle(cornerRadius: 7))
                     }
@@ -156,12 +170,59 @@ private struct SettingsShot: View {
             .frame(maxWidth: .infinity)
             .background(.bar)
             .overlay(alignment: .bottom) { Divider() }
-            AppearanceTab(prefs: prefs, hot: 1)
+            content
                 .scrollDisabled(true)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }
         .background(Color(nsColor: .windowBackgroundColor))
+    }
+}
+
+/// Une fenêtre de terminal, et l'anneau des textes ouvert dessus.
+private struct TerminalScene: View {
+    var actions: [FileAction]
+
+    var body: some View {
+        GeometryReader { proxy in
+            ZStack {
+                Backdrop(dark: true)
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(spacing: 8) {
+                        ForEach([Color(red: 1, green: 0.37, blue: 0.34), Color(red: 1, green: 0.74, blue: 0.18), Color(red: 0.16, green: 0.78, blue: 0.25)], id: \.self) {
+                            Circle().fill($0).frame(width: 12, height: 12)
+                        }
+                        Spacer()
+                        Text(verbatim: "~/dev/ringlet").font(.system(size: 13, weight: .medium)).foregroundStyle(.secondary)
+                        Spacer()
+                    }
+                    .padding(14)
+                    VStack(alignment: .leading, spacing: 7) {
+                        line("~/dev/ringlet main ❯ make release", .green)
+                        line("Building Ringlet.app… done", .white.opacity(0.8))
+                        line("Signing and notarizing… done", .white.opacity(0.8))
+                        line("Tests: 51 passed", .white.opacity(0.8))
+                        line("Publish v0.2 to GitHub now? (y/N)", .yellow)
+                        line("▍", .white)
+                    }
+                    .padding(.horizontal, 22)
+                    Spacer()
+                }
+                .frame(width: proxy.size.width * 0.74, height: proxy.size.height * 0.78)
+                .background(Color(red: 0.09, green: 0.09, blue: 0.11), in: RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.white.opacity(0.12), lineWidth: 1))
+                .shadow(color: .black.opacity(0.4), radius: 30, y: 16)
+                .position(x: proxy.size.width * 0.45, y: proxy.size.height * 0.5)
+                RingFace(actions: actions, geometry: .standard(count: actions.count, size: .large), hot: 0,
+                         cancelHot: false, isOpen: true, look: RingLook(style: .glass))
+                    .position(x: proxy.size.width * 0.58, y: proxy.size.height * 0.5)
+            }
+        }
+        .environment(\.colorScheme, .dark)
+    }
+
+    private func line(_ text: String, _ color: Color) -> some View {
+        Text(verbatim: text).font(.system(size: 15, design: .monospaced)).foregroundStyle(color)
     }
 }
 

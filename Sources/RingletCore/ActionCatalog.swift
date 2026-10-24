@@ -15,18 +15,22 @@ public enum ActionKind: String, Sendable, CaseIterable {
     case goUp
     case openEditor
     case newFolder
+    // Anneau des textes (apps autres que le Finder)
+    case typeText
 }
 
 /// Une action de l'anneau : `symbol` (SF Symbol) ou à défaut `shortLabel` dans le secteur, `label` sous l'anneau.
+/// `snippet` : le texte à taper, pour `typeText`.
 public struct FileAction: Sendable, Equatable, Identifiable {
     public var kind: ActionKind
     public var shortLabel: String
     public var symbol: String?
     public var label: String
-    public var id: ActionKind { kind }
+    public var snippet: TextSnippet?
+    public var id: String { snippet.map { $0.id.uuidString } ?? kind.rawValue }
 
-    public init(kind: ActionKind, shortLabel: String, symbol: String? = nil, label: String) {
-        self.kind = kind; self.shortLabel = shortLabel; self.symbol = symbol; self.label = label
+    public init(kind: ActionKind, shortLabel: String, symbol: String? = nil, label: String, snippet: TextSnippet? = nil) {
+        self.kind = kind; self.shortLabel = shortLabel; self.symbol = symbol; self.label = label; self.snippet = snippet
     }
 }
 

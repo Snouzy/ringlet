@@ -27,7 +27,7 @@ with Apple frameworks only (SwiftUI, ImageIO, AVFoundation).
 
 | How | Where | Notes |
 | --- | --- | --- |
-| Hold **`⌃⌥ Space`** | Anywhere | Changeable in Settings › Triggers. Release on a slice to run it. |
+| Hold **your shortcut** | Anywhere | None by default: record one in Settings › Triggers. Release on a slice to run it. |
 | Hold the **right mouse button** | Finder | A quick right-click still opens the usual menu. The hold delay is adjustable. |
 | **Middle** or **side** mouse button | Anywhere | Off by default. |
 | **Services** menu | Finder right-click | *Convert to JPG / PNG with Ringlet*, no ring needed. |
@@ -50,6 +50,21 @@ never modified); a name that is already taken becomes `IMG_8271 2.jpg`.
 
 <p align="center">
   <img src="docs/images/folder.png" alt="The folder ring: go up, open the terminal, open in the editor, new folder, copy the path" width="760">
+</p>
+
+## Texts in any app
+
+Outside the Finder, the ring shows **your own texts** for the app in front and types the one you pick where your
+cursor is, without touching the clipboard. Answer a coding agent in your terminal with *Yes, go ahead.* in one
+gesture, or keep canned replies for Slack. Each text can press **Return** after, and appears in every app or only in
+the ones you choose (up to 8 per ring). Set them up in Settings › Texts; typing needs the Accessibility permission.
+
+<p align="center">
+  <img src="docs/images/texts.png" alt="The ring open over a terminal with canned replies: Yes go, Tests first, Explain, Stop, Thanks" width="860">
+</p>
+
+<p align="center">
+  <img src="docs/images/texts-settings.png" alt="The Texts settings tab: each text with its ring label, Press Return after, and its apps" width="560">
 </p>
 
 ## Two styles
@@ -90,8 +105,8 @@ Ringlet makes no network connection and collects nothing.
 `scripts/build-app.sh` signs with your *Developer ID Application* certificate when one is in the keychain, and ad
 hoc otherwise. With an ad hoc signature, macOS forgets the permissions after every rebuild.
 
-If you type with several input sources, macOS already uses `⌃⌥ Space` to switch between them: pick another shortcut
-in Settings › Triggers.
+Ringlet sets no keyboard shortcut by default, so it never takes one another app relies on. When you pick one, avoid
+`⌃ Space` and `⌃⌥ Space`: macOS uses them to switch input sources.
 
 ## Development
 
@@ -134,7 +149,7 @@ and on the Desktop, and needs no Finder Sync extension.
 <details>
 <summary><strong>En français</strong></summary>
 
-Ringlet est un anneau d'actions pour le Finder. Tu sélectionnes des fichiers, tu maintiens `⌃⌥ Espace`, le clic droit
+Ringlet est un anneau d'actions pour le Finder. Tu sélectionnes des fichiers, tu maintiens ton raccourci (aucun par défaut), le clic droit
 (dans le Finder) ou un bouton de souris, tu pars vers une action et tu relâches. On choisit par la direction, sans
 viser précisément ; relâcher sur la croix ou hors de l'anneau annule. L'app est en français sur un Mac en français,
 en anglais sinon.
@@ -144,6 +159,7 @@ en anglais sinon.
 - **Photos :** copie sans position GPS.
 - **Vidéos :** MP4, 720p, extraire l'audio.
 - **Dans le vide d'une fenêtre :** l'anneau du dossier (terminal, éditeur, nouveau dossier, chemin, remonter).
+- **Hors du Finder :** tes textes à toi (« OK, oui vas-y. »), tapés là où est le curseur, avec Entrée si tu veux, dans les apps de ton choix.
 
 Deux styles au choix, Verre ou Cadran, avec la couleur et la taille réglables. Les fichiers créés vont à côté des
 originaux, qui ne sont jamais modifiés. Tout reste sur ton Mac.

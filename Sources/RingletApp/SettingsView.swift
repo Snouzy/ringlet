@@ -14,10 +14,11 @@ enum SettingsWindow {
         (String(localized: "Appearance"), "paintpalette"),
         (String(localized: "Triggers"), "cursorarrow.click.2"),
         (String(localized: "Actions"), "circle.grid.cross"),
+        (String(localized: "Texts"), "text.bubble"),
         (String(localized: "Permissions"), "lock.shield"),
     ]
 
-    @MainActor static func make(prefs: Preferences, hotKeyRegistered: @escaping () -> Bool,
+    @MainActor static func make(prefs: Preferences, shortcutTaken: @escaping () -> Bool,
                                 onRecordingShortcut: @escaping (Bool) -> Void) -> NSWindow {
         let tabs = NSTabViewController()
         tabs.tabStyle = .toolbar
@@ -25,14 +26,18 @@ enum SettingsWindow {
         let views: [AnyView] = [
             AnyView(GeneralTab(prefs: prefs)),
             AnyView(AppearanceTab(prefs: prefs)),
-            AnyView(TriggersTab(prefs: prefs, hotKeyRegistered: hotKeyRegistered, onRecordingShortcut: onRecordingShortcut)),
+            AnyView(TriggersTab(prefs: prefs, shortcutTaken: shortcutTaken, onRecordingShortcut: onRecordingShortcut)),
             AnyView(ActionsTab(prefs: prefs)),
+            AnyView(TextsTab(prefs: prefs)),
             AnyView(PermissionsTab()),
         ]
         for (section, view) in zip(sections, views) {
             // Chaque rubrique prend la hauteur de son contenu ; la fenêtre suit quand on change de rubrique.
-            let host = NSHostingController(rootView: view.scrollDisabled(true).fixedSize(horizontal: false, vertical: true)
-                .frame(width: width))
+            // Les textes, dont la liste n'a pas de fin, défilent dans une hauteur fixe.
+            let sized = section.title == String(localized: "Texts")
+                ? AnyView(view.frame(width: width, height: 560))
+                : AnyView(view.scrollDisabled(true).fixedSize(horizontal: false, vertical: true).frame(width: width))
+            let host = NSHostingController(rootView: sized)
             host.sizingOptions = [.preferredContentSize]
             host.title = section.title
             let item = NSTabViewItem(viewController: host)
@@ -57,12 +62,20 @@ private struct GeneralTab: View {
         Form {
             Section {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Select files in the Finder, hold \(prefs.shortcut.title), move toward an action and let go.")
+                    if let shortcut = prefs.shortcut {
+                        Text("Select files in the Finder, hold \(shortcut.title), move toward an action and let go.")
+                    } else {
+                        Text("Select files in the Finder, hold the shortcut or the mouse button chosen in Triggers, move toward an action and let go.")
+                    }
                     Text("Let go without aiming and the ring stays open: click to choose, Esc to close.")
                         .foregroundStyle(.secondary)
                 }
                 .font(.callout)
                 .padding(.vertical, 4)
+                if prefs.shortcut == nil && prefs.mouseTriggers.isEmpty {
+                    Label("No shortcut or mouse button yet: choose one in Triggers.", systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange).font(.callout)
+                }
             }
             Section {
                 Toggle("Open Ringlet at login", isOn: Binding(get: { launchAtLogin }, set: setLaunchAtLogin))
@@ -218,7 +231,7 @@ private struct AccentPicker: View {
 
 private struct TriggersTab: View {
     @Bindable var prefs: Preferences
-    let hotKeyRegistered: () -> Bool
+    let shortcutTaken: () -> Bool
     let onRecordingShortcut: (Bool) -> Void
     @State private var trusted = Permissions.accessibility == .granted
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -229,16 +242,14 @@ private struct TriggersTab: View {
                 LabeledContent("Shortcut to hold") {
                     ShortcutRecorder(combo: $prefs.shortcut, onRecording: onRecordingShortcut)
                 }
-                if !hotKeyRegistered() {
+                if prefs.shortcut != nil && shortcutTaken() {
                     Text("macOS or another app already uses this shortcut: pick another one.")
                         .foregroundStyle(.orange).font(.callout)
                 }
             }
             Section("Mouse") {
-                Picker("Button", selection: $prefs.mouseTrigger) {
-                    ForEach(MouseTrigger.allCases) { Text($0.label).tag($0) }
-                }
-                if prefs.mouseTrigger == .holdRight {
+                Toggle("Right-click hold (in the Finder)", isOn: $prefs.holdRightInFinder)
+                if prefs.holdRightInFinder {
                     LabeledContent("Delay before the ring") {
                         HStack {
                             Slider(value: $prefs.holdDelay, in: 0.15...0.6, step: 0.01).frame(width: 160)
@@ -247,7 +258,14 @@ private struct TriggersTab: View {
                     }
                     Text("A quick right-click still opens the usual Finder menu.").foregroundStyle(.secondary).font(.callout)
                 }
-                if prefs.mouseTrigger != .none && !trusted {
+                Picker("Button, anywhere", selection: $prefs.mouseButton) {
+                    ForEach(MouseButton.allCases) { Text($0.label).tag($0) }
+                }
+                if prefs.mouseButton != .none {
+                    Text("Hold it, move toward a slice and let go: the slice runs. Its usual click no longer reaches the apps.")
+                        .foregroundStyle(.secondary).font(.callout)
+                }
+                if !prefs.mouseTriggers.isEmpty && !trusted {
                     HStack {
                         Label("The mouse needs the Accessibility permission.", systemImage: "exclamationmark.triangle.fill")
                             .foregroundStyle(.orange)
@@ -287,6 +305,113 @@ private struct ActionsTab: View {
             }
         }
         .formStyle(.grouped)
+    }
+}
+
+/// Textes que l'anneau tape hors du Finder : un par tranche, dans les apps choisies.
+struct TextsTab: View {
+    @Bindable var prefs: Preferences
+    @State private var trusted = Permissions.accessibility == .granted
+    private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
+    var body: some View {
+        Form {
+            Section {
+                Text("Outside the Finder, the ring shows the texts of the app in front (up to \(SnippetCatalog.maxPerRing)) and types the one you pick where your cursor is.")
+                    .foregroundStyle(.secondary).font(.callout)
+                if !trusted {
+                    HStack {
+                        Label("Typing needs the Accessibility permission.", systemImage: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                        Spacer()
+                        Button("Allow…") {
+                            Permissions.requestAccessibility()
+                            Permissions.openAccessibilitySettings()
+                        }
+                    }
+                    .font(.callout)
+                }
+            }
+            ForEach($prefs.snippets) { $snippet in
+                Section {
+                    SnippetEditor(snippet: $snippet) { prefs.snippets.removeAll { $0.id == snippet.id } }
+                }
+            }
+            Section {
+                Button("Add a text", systemImage: "plus") { prefs.snippets.append(TextSnippet()) }
+            }
+        }
+        .formStyle(.grouped)
+        .onReceive(timer) { _ in trusted = Permissions.accessibility == .granted }
+    }
+}
+
+private struct SnippetEditor: View {
+    @Binding var snippet: TextSnippet
+    let onDelete: () -> Void
+
+    var body: some View {
+        TextField("Text", text: $snippet.text, prompt: Text("OK, yes go ahead."), axis: .vertical)
+            .lineLimit(1...4)
+        TextField("Label in the ring", text: $snippet.label, prompt: Text(snippet.shortLabel.isEmpty ? "OK go" : snippet.shortLabel))
+        HStack {
+            Toggle("Press Return after", isOn: $snippet.pressReturn).toggleStyle(.checkbox)
+            Spacer()
+            SnippetApps(apps: $snippet.apps)
+            Button(role: .destructive, action: onDelete) { Image(systemName: "trash") }
+                .buttonStyle(.borderless)
+                .help(String(localized: "Delete this text"))
+                .accessibilityLabel(String(localized: "Delete this text"))
+        }
+    }
+}
+
+/// Apps où le texte apparaît : toutes, ou celles de la liste.
+private struct SnippetApps: View {
+    @Binding var apps: [String]
+
+    var body: some View {
+        HStack(spacing: 6) {
+            if apps.isEmpty {
+                Text("All apps").foregroundStyle(.secondary)
+            }
+            ForEach(apps, id: \.self) { id in
+                HStack(spacing: 3) {
+                    Text(AppChoice(bundleID: id).name)
+                    Button { apps.removeAll { $0 == id } } label: { Image(systemName: "xmark.circle.fill") }
+                        .buttonStyle(.plain).foregroundStyle(.secondary)
+                        .accessibilityLabel(String(localized: "Remove \(AppChoice(bundleID: id).name)"))
+                }
+                .padding(.horizontal, 7).padding(.vertical, 2)
+                .background(Color.primary.opacity(0.08), in: Capsule())
+            }
+            Menu {
+                ForEach(Self.runningApps.filter { !apps.contains($0.bundleID) }) { app in
+                    Button(app.name) { apps.append(app.bundleID) }
+                }
+                Divider()
+                Button("Other…") { if let app = AppChoice.pick(), !apps.contains(app.bundleID) { apps.append(app.bundleID) } }
+                if !apps.isEmpty {
+                    Divider()
+                    Button("All apps") { apps.removeAll() }
+                }
+            } label: {
+                Image(systemName: "plus")
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .accessibilityLabel(String(localized: "Add an app"))
+        }
+    }
+
+    /// Apps ouvertes, sauf le Finder et Ringlet : celles où l'on tape le plus souvent.
+    private static var runningApps: [AppChoice] {
+        let ids = NSWorkspace.shared.runningApplications
+            .filter { $0.activationPolicy == .regular }
+            .compactMap(\.bundleIdentifier)
+            .filter { $0 != "com.apple.finder" && $0 != Bundle.main.bundleIdentifier }
+        return Array(Set(ids)).map(AppChoice.init).sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 }
 

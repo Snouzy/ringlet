@@ -5,9 +5,9 @@ import RingletCore
 private let log = Logger(subsystem: "io.snouzy.ringlet", category: "souris")
 
 /// Ouvre l'anneau depuis la souris (autorisation Accessibilité) : clic droit maintenu dans le Finder,
-/// ou un bouton central / latéral n'importe où. Les clics qui ne concernent pas Ringlet passent sans délai.
+/// et/ou un bouton central / latéral n'importe où. Les clics qui ne concernent pas Ringlet passent sans délai.
 @MainActor final class MouseTriggerTap {
-    var mode: MouseTrigger = .none { didSet { if mode != oldValue { refresh() } } }
+    var triggers = MouseTriggers() { didSet { if triggers != oldValue { refresh() } } }
     var holdDelay = 0.28
     var onPress: (TriggerContext) -> Void = { _ in }
     var onRelease: () -> Void = {}
@@ -28,10 +28,10 @@ private let log = Logger(subsystem: "io.snouzy.ringlet", category: "souris")
     /// (Ré)installe l'interception selon le mode ; ne fait rien tant que l'Accessibilité n'est pas accordée.
     func refresh() {
         stop()
-        guard mode != .none else { return }
+        guard !triggers.isEmpty else { return }
         guard AXIsProcessTrusted() else {
             if !loggedUntrusted {
-                log.notice("Accessibilité non accordée, souris inactive (mode \(self.mode.rawValue, privacy: .public))")
+                log.notice("Accessibilité non accordée, souris inactive (\(self.summary, privacy: .public))")
             }
             loggedUntrusted = true
             return
@@ -51,11 +51,16 @@ private let log = Logger(subsystem: "io.snouzy.ringlet", category: "souris")
             log.error("Création de l'interception de la souris refusée par macOS")
             return
         }
-        log.notice("Souris active (mode \(self.mode.rawValue, privacy: .public))")
+        log.notice("Souris active (\(self.summary, privacy: .public))")
         self.tap = tap
         source = CFMachPortCreateRunLoopSource(nil, tap, 0)
         CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
         CGEvent.tapEnable(tap: tap, enable: true)
+    }
+
+    private var summary: String {
+        [triggers.holdRight ? "clic droit maintenu" : nil, triggers.button.number.map { "bouton \($0 + 1)" }]
+            .compactMap { $0 }.joined(separator: " + ")
     }
 
     func stop() {
@@ -77,9 +82,9 @@ private let log = Logger(subsystem: "io.snouzy.ringlet", category: "souris")
         }
         guard event.getIntegerValueField(.eventSourceUserData) != Self.replayMarker else { return pass }
 
-        if let button = mode.otherButtonNumber {
-            guard type == .otherMouseDown || type == .otherMouseUp,
-                  event.getIntegerValueField(.mouseEventButtonNumber) == button else { return pass }
+        if type == .otherMouseDown || type == .otherMouseUp {
+            guard let button = triggers.button.number, event.getIntegerValueField(.mouseEventButtonNumber) == button
+            else { return pass }
             if type == .otherMouseDown {
                 otherButtonDown = true
                 later { $0.onPress(.selection) }
@@ -90,7 +95,7 @@ private let log = Logger(subsystem: "io.snouzy.ringlet", category: "souris")
             return nil
         }
 
-        guard mode == .holdRight else { return pass }
+        guard triggers.holdRight else { return pass }
         switch type {
         case .rightMouseDown:
             guard FinderHitTest.isFinder(at: event.location) else { return pass }

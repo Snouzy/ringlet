@@ -7,9 +7,10 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 echo "==> Compilation (release)"
 # Le compilateur relève les textes à traduire ; le catalogue les reçoit (sans traduction pour les nouveaux,
 # ce que signale LocalizationTests).
-STRINGS=".build/localized-strings"
+STRINGS="$PWD/.build/localized-strings"
 mkdir -p "$STRINGS"
 swift build -c release -Xswiftc -emit-localized-strings -Xswiftc -emit-localized-strings-path -Xswiftc "$STRINGS"
+compgen -G "$STRINGS/*.stringsdata" >/dev/null || { echo "Aucun texte relevé dans $STRINGS" >&2; exit 1; }
 xcrun xcstringstool sync Resources/Localizable.xcstrings --stringsdata "$STRINGS"/*.stringsdata
 BIN="$(swift build -c release --show-bin-path)"
 

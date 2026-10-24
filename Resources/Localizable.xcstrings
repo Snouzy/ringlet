@@ -162,6 +162,36 @@
         }
       }
     },
+    "Add a text": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter un texte"
+          }
+        }
+      }
+    },
+    "Add an app": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter une app"
+          }
+        }
+      }
+    },
+    "All apps": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toutes les apps"
+          }
+        }
+      }
+    },
     "Allow Ringlet in System Settings › Privacy & Security › Automation › Finder": {
       "localizations": {
         "fr": {
@@ -222,16 +252,6 @@
         }
       }
     },
-    "Button": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bouton"
-          }
-        }
-      }
-    },
     "Button 4 (side, back)": {
       "localizations": {
         "fr": {
@@ -248,6 +268,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bouton 5 (latéral avant)"
+          }
+        }
+      }
+    },
+    "Button, anywhere": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bouton, partout"
           }
         }
       }
@@ -288,6 +318,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Choisir"
+          }
+        }
+      }
+    },
+    "Choose a shortcut or a mouse button in Settings": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisis un raccourci ou un bouton de souris dans les réglages"
           }
         }
       }
@@ -388,6 +428,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Délai avant l'anneau"
+          }
+        }
+      }
+    },
+    "Delete this text": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supprimer ce texte"
           }
         }
       }
@@ -552,6 +602,16 @@
         }
       }
     },
+    "Hold it, move toward a slice and let go: the slice runs. Its usual click no longer reaches the apps.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maintiens-le, pars vers une tranche et relâche : la tranche se lance. Son clic habituel n'arrive plus aux apps."
+          }
+        }
+      }
+    },
     "JPG quality": {
       "localizations": {
         "fr": {
@@ -568,6 +628,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Clavier"
+          }
+        }
+      }
+    },
+    "Label in the ring": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Libellé dans l'anneau"
           }
         }
       }
@@ -642,12 +712,32 @@
         }
       }
     },
+    "No shortcut or mouse button yet: choose one in Triggers.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun raccourci ni bouton de souris pour l'instant : choisis-en un dans Déclencheurs."
+          }
+        }
+      }
+    },
     "None": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
             "value": "Aucun"
+          }
+        }
+      }
+    },
+    "OK, yes go ahead.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK, oui vas-y."
           }
         }
       }
@@ -722,6 +812,16 @@
         }
       }
     },
+    "Outside the Finder, the ring shows the texts of the app in front (up to %lld) and types the one you pick where your cursor is.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hors du Finder, l'anneau montre les textes de l'app au premier plan (%lld au plus) et tape celui que tu choisis là où est le curseur."
+          }
+        }
+      }
+    },
     "Path": {
       "localizations": {
         "fr": {
@@ -772,6 +872,16 @@
         }
       }
     },
+    "Press Return after": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appuyer sur Entrée après"
+          }
+        }
+      }
+    },
     "Preview": {
       "localizations": {
         "fr": {
@@ -812,6 +922,16 @@
         }
       }
     },
+    "Record shortcut": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrer un raccourci"
+          }
+        }
+      }
+    },
     "Red": {
       "localizations": {
         "fr": {
@@ -828,6 +948,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Réduire les animations"
+          }
+        }
+      }
+    },
+    "Remove %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retirer %@"
+          }
+        }
+      }
+    },
+    "Remove the shortcut": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retirer le raccourci"
           }
         }
       }
@@ -899,6 +1039,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sélectionne des fichiers dans le Finder, maintiens %@, pars vers une action et relâche."
+          }
+        }
+      }
+    },
+    "Select files in the Finder, hold the shortcut or the mouse button chosen in Triggers, move toward an action and let go.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sélectionne des fichiers dans le Finder, maintiens le raccourci ou le bouton de souris choisi dans Déclencheurs, pars vers une action et relâche."
           }
         }
       }
@@ -984,6 +1134,26 @@
         }
       }
     },
+    "Text": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Texte"
+          }
+        }
+      }
+    },
+    "Texts": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Textes"
+          }
+        }
+      }
+    },
     "The Finder couldn’t do it": {
       "localizations": {
         "fr": {
@@ -1020,6 +1190,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tape le raccourci…"
+          }
+        }
+      }
+    },
+    "Typing a text needs the Accessibility permission": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Taper un texte demande l'autorisation Accessibilité"
+          }
+        }
+      }
+    },
+    "Typing needs the Accessibility permission.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La saisie a besoin de l'autorisation Accessibilité."
           }
         }
       }

@@ -7,7 +7,10 @@ import OSLog
         var keyCode: UInt32
         var modifiers: UInt32
         var label: String
-        static let standard = Combo(keyCode: UInt32(kVK_Space), modifiers: UInt32(controlKey | optionKey), label: "⌃⌥ Space")
+        /// Ancien raccourci par défaut (jusqu'à la 0.1) : il entrait en conflit avec d'autres apps et avec macOS.
+        static let formerDefault = Combo(keyCode: UInt32(kVK_Space), modifiers: UInt32(controlKey | optionKey), label: "⌃⌥ Space")
+
+        func sameKeys(as other: Combo) -> Bool { keyCode == other.keyCode && modifiers == other.modifiers }
 
         /// Libellé affiché, dans la langue de l'app : `label` est enregistré tel quel et peut dater d'une autre langue.
         var title: String {

@@ -32,10 +32,11 @@ enum TriggerContext: Equatable {
     case emptyArea(isDesktop: Bool)
 }
 
-/// Sur quoi portent les actions de l'anneau ouvert.
+/// Sur quoi portent les actions de l'anneau ouvert : des fichiers, un dossier, ou l'app au premier plan (ses textes).
 enum RingTarget: Equatable {
     case files([URL])
     case folder(URL, isDesktop: Bool)
+    case app(String)
 }
 
 @MainActor final class RingController {
@@ -44,6 +45,7 @@ enum RingTarget: Equatable {
     var look = RingLook()
     var terminal = AppChoice(bundleID: "com.apple.Terminal")
     var editor = AppChoice(bundleID: "com.microsoft.VSCode")
+    var snippets: [TextSnippet] = []
 
     private let model = RingModel()
     private let panel = RingPanel()
@@ -109,6 +111,12 @@ enum RingTarget: Equatable {
     }
 
     private func resolve(_ context: TriggerContext) -> Result<RingTarget, FinderScript.Failure> {
+        // Hors du Finder (et de Ringlet), l'anneau montre les textes de l'app au premier plan, s'il y en a.
+        if context == .selection, let app = NSWorkspace.shared.frontmostApplication?.bundleIdentifier,
+           app != "com.apple.finder", app != Bundle.main.bundleIdentifier,
+           !SnippetCatalog.snippets(snippets, forApp: app).isEmpty {
+            return .success(.app(app))
+        }
         switch context {
         case .emptyArea(isDesktop: true):
             let desktop = FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first
@@ -140,6 +148,8 @@ enum RingTarget: Equatable {
             actions = ActionCatalog.actions(for: urls, terminal: terminal.name, editor: editor.name, canGoUp: !onDesktop)
         case .folder(_, let isDesktop):
             actions = ActionCatalog.folderActions(isDesktop: isDesktop, terminal: terminal.name, editor: editor.name)
+        case .app(let app):
+            actions = SnippetCatalog.actions(for: SnippetCatalog.snippets(snippets, forApp: app))
         }
         guard !actions.isEmpty else { return showMessage(String(localized: "No action here"), isError: true, at: point) }
 
@@ -225,9 +235,10 @@ enum RingTarget: Equatable {
 
     private func runHot() {
         guard let hot = model.hot, model.actions.indices.contains(hot) else { return }
-        let kind = model.actions[hot].kind, center = model.center
+        let action = model.actions[hot], center = model.center
         close()
-        perform(kind, on: target, messageAt: center)
+        if let snippet = action.snippet { return type(snippet, messageAt: center) }
+        perform(action.kind, on: target, messageAt: center)
     }
 
     private func perform(_ kind: ActionKind, on target: RingTarget, messageAt center: CGPoint) {
@@ -235,6 +246,7 @@ enum RingTarget: Equatable {
         switch target {
         case .files(let files): urls = files
         case .folder(let folder, _): urls = [folder]
+        case .app: urls = []
         }
         switch kind {
         case .copyPath:
@@ -263,6 +275,17 @@ enum RingTarget: Equatable {
             }
         default:
             createFiles(kind, from: urls, messageAt: center)
+        }
+    }
+
+    /// Le panneau vient de partir : on laisse le clavier revenir à l'app avant de taper.
+    private func type(_ snippet: TextSnippet, messageAt center: CGPoint) {
+        guard TextTyper.canType else {
+            Permissions.requestAccessibility()
+            return showMessage(String(localized: "Typing a text needs the Accessibility permission"), isError: true, at: center, duration: 3)
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+            TextTyper.type(snippet.text, pressReturn: snippet.pressReturn)
         }
     }
 

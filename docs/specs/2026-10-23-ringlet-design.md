@@ -7,7 +7,7 @@
 ## Ce que fait la v1
 
 1. Je sélectionne un ou plusieurs fichiers dans le Finder.
-2. Je maintiens le raccourci (par défaut `⌃⌥ Espace`) ou le bouton de souris choisi : l'anneau s'ouvre sous le curseur.
+2. Je maintiens le raccourci (aucun par défaut, à choisir dans Déclencheurs) ou le bouton de souris choisi : l'anneau s'ouvre sous le curseur.
 3. Je pars dans une direction : le secteur visé s'allume, son libellé s'affiche sous l'anneau.
 4. Je relâche : l'action s'exécute sur toute la sélection. Relâché dans la zone morte : l'anneau reste ouvert,
    un clic choisit, `Échap` ou un clic hors de l'anneau ferme.

@@ -2,17 +2,27 @@ import AppKit
 import Carbon.HIToolbox
 import SwiftUI
 
-/// Bouton qui enregistre le prochain raccourci tapé (au moins ⌃, ⌥ ou ⌘). Échap annule.
+/// Bouton qui enregistre le prochain raccourci tapé (au moins ⌃, ⌥ ou ⌘). Échap annule, ✕ retire le raccourci.
 struct ShortcutRecorder: View {
-    @Binding var combo: HotKey.Combo
+    @Binding var combo: HotKey.Combo?
     var onRecording: (Bool) -> Void = { _ in }
     @State private var isRecording = false
     @State private var monitor: Any?
 
     var body: some View {
-        Button(isRecording ? String(localized: "Type the shortcut…") : combo.title) { isRecording ? stop() : start() }
+        HStack(spacing: 4) {
+            Button(isRecording ? String(localized: "Type the shortcut…") : combo?.title ?? String(localized: "Record shortcut")) {
+                isRecording ? stop() : start()
+            }
             .frame(minWidth: 150)
-            .onDisappear(perform: stop)
+            if combo != nil && !isRecording {
+                Button { combo = nil } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary) }
+                    .buttonStyle(.plain)
+                    .help(String(localized: "Remove the shortcut"))
+                    .accessibilityLabel(String(localized: "Remove the shortcut"))
+            }
+        }
+        .onDisappear(perform: stop)
     }
 
     private func start() {

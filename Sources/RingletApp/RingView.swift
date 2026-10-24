@@ -151,7 +151,10 @@ private struct RingFaceContent: View {
             if let symbol = action.symbol {
                 Image(systemName: symbol).font(.system(size: 17, weight: .semibold))
             } else {
+                // Libellé d'un texte : deux lignes au plus, rétréci plutôt que coupé.
                 Text(action.shortLabel).font(.system(size: 13, weight: .bold))
+                    .multilineTextAlignment(.center).lineLimit(2).minimumScaleFactor(0.7)
+                    .frame(width: min(76, 2 * .pi * radius / Double(max(actions.count, 1)) * 0.85))
             }
         }
         .foregroundStyle(isHot ? Color.white : Color.primary.opacity(isGlass ? 1 : 0.86))

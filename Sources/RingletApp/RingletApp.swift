@@ -28,7 +28,8 @@ struct RingletApp: App {
     private let services = ServiceProvider()
     private var settingsWindow: NSWindow?
     private var trustTimer: Timer?
-    @Published private(set) var hotKeyRegistered = false
+    /// true quand le raccourci choisi est déjà pris par macOS ou une autre app.
+    @Published private(set) var shortcutTaken = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -47,7 +48,7 @@ struct RingletApp: App {
         // L'Accessibilité s'accorde dans Réglages Système, hors de l'app : on installe la souris dès qu'elle arrive.
         trustTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated {
-                guard let self, self.prefs.mouseTrigger != .none, !self.mouse.isRunning else { return }
+                guard let self, !self.prefs.mouseTriggers.isEmpty, !self.mouse.isRunning else { return }
                 self.mouse.refresh()
             }
         }
@@ -59,21 +60,28 @@ struct RingletApp: App {
 
     /// Applique les réglages : raccourci, bouton de souris, taille, qualité.
     func apply() {
-        hotKeyRegistered = hotKey.register(prefs.shortcut)
-        log.notice("Raccourci \(self.prefs.shortcut.label, privacy: .public) : \(self.hotKeyRegistered ? "enregistré" : "refusé", privacy: .public)")
+        if let shortcut = prefs.shortcut {
+            shortcutTaken = !hotKey.register(shortcut)
+            log.notice("Raccourci \(shortcut.label, privacy: .public) : \(self.shortcutTaken ? "refusé" : "enregistré", privacy: .public)")
+        } else {
+            hotKey.unregister()
+            shortcutTaken = false
+            log.notice("Aucun raccourci clavier")
+        }
         mouse.holdDelay = prefs.holdDelay
-        mouse.mode = prefs.mouseTrigger
-        if prefs.mouseTrigger != .none, !mouse.isRunning { mouse.refresh() }
+        mouse.triggers = prefs.mouseTriggers
+        if !prefs.mouseTriggers.isEmpty, !mouse.isRunning { mouse.refresh() }
         ring.ringSize = prefs.ringSize
         ring.look = prefs.look
         ring.jpegQuality = prefs.jpegQuality
         ring.terminal = prefs.terminal
         ring.editor = prefs.editor
+        ring.snippets = prefs.snippets
     }
 
     func showSettings() {
         if settingsWindow == nil {
-            let window = SettingsWindow.make(prefs: prefs, hotKeyRegistered: { [weak self] in self?.hotKeyRegistered ?? false },
+            let window = SettingsWindow.make(prefs: prefs, shortcutTaken: { [weak self] in self?.shortcutTaken ?? false },
                                              onRecordingShortcut: { [weak self] recording in
                 // Pendant l'enregistrement, le raccourci actuel doit arriver jusqu'au champ.
                 guard let self else { return }
@@ -95,10 +103,14 @@ private struct MenuContent: View {
     @ObservedObject var delegate: AppDelegate
 
     var body: some View {
-        if delegate.hotKeyRegistered {
-            Text("Hold \(delegate.prefs.shortcut.title) on files in the Finder")
-        } else {
-            Text("\(delegate.prefs.shortcut.title) is already taken: change it in Settings")
+        if let shortcut = delegate.prefs.shortcut {
+            if delegate.shortcutTaken {
+                Text("\(shortcut.title) is already taken: change it in Settings")
+            } else {
+                Text("Hold \(shortcut.title) on files in the Finder")
+            }
+        } else if delegate.prefs.mouseTriggers.isEmpty {
+            Text("Choose a shortcut or a mouse button in Settings")
         }
         Divider()
         Button("Settings…") { delegate.showSettings() }
