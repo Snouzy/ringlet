@@ -103,16 +103,14 @@ private struct MenuContent: View {
     @ObservedObject var delegate: AppDelegate
 
     var body: some View {
-        if let shortcut = delegate.prefs.shortcut {
-            if delegate.shortcutTaken {
-                Text("\(shortcut.title) is already taken: change it in Settings")
-            } else {
-                Text("Hold \(shortcut.title) on files in the Finder")
-            }
-        } else if delegate.prefs.mouseTriggers.isEmpty {
+        // Seulement quand quelque chose ne va pas : raccourci pris, ou rien pour ouvrir l'anneau.
+        if let shortcut = delegate.prefs.shortcut, delegate.shortcutTaken {
+            Text("\(shortcut.title) is already taken: change it in Settings")
+            Divider()
+        } else if delegate.prefs.shortcut == nil && delegate.prefs.mouseTriggers.isEmpty {
             Text("Choose a shortcut or a mouse button in Settings")
+            Divider()
         }
-        Divider()
         Button("Settings…") { delegate.showSettings() }
             .keyboardShortcut(",")
         Divider()

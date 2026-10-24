@@ -592,16 +592,6 @@
         }
       }
     },
-    "Hold %@ on files in the Finder": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Maintiens %@ sur des fichiers du Finder"
-          }
-        }
-      }
-    },
     "Hold it, move toward a slice and let go: the slice runs. Its usual click no longer reaches the apps.": {
       "localizations": {
         "fr": {
