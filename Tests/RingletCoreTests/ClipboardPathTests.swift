@@ -22,6 +22,17 @@ private func parse(_ text: String) -> String? { ClipboardPath.url(from: text, ex
     #expect(parse("/src/main.swift:42:7") == "/src/main.swift")
 }
 
+@Test func findsThePathInsideACommandOrASentence() {
+    #expect(parse("! open ~/Desktop/a.png") == "\(home)/Desktop/a.png")
+    #expect(parse("  open '/tmp/rendu final.mp4'") == "/tmp/rendu final.mp4")
+    #expect(parse("ffmpeg -i /tmp/rendu final.mp4 -c copy") == "/tmp/rendu final.mp4")
+    #expect(parse("cd /tmp/projet && ls") == "/tmp/projet")
+    #expect(parse("Le rendu est dans /tmp/projet.") == "/tmp/projet")
+    #expect(parse("voir (/src/main.swift:42)") == "/src/main.swift")
+    #expect(parse("Sol : tape cette commande\n\n  ! open ~/Desktop/a.png") == "\(home)/Desktop/a.png")
+    #expect(parse("https://fitdistance.io/tmp/projet") == nil)
+}
+
 @Test func takesTheFirstLineOfSeveralPaths() {
     #expect(parse("/tmp/projet\n/tmp/rendu final.mp4") == "/tmp/projet")
 }

@@ -9,27 +9,70 @@ public enum ClipboardPath {
         case selectInFolder
     }
 
-    /// Le chemin d'un texte copié, s'il existe. Première ligne seulement ; guillemets, `file://`, `~`, espaces
-    /// échappés (`\ `, copiés d'un terminal) et numéro de ligne final (`main.swift:42`) acceptés.
+    /// Le premier chemin existant d'un texte copié : seul (`/a/b.mp4`) ou dans une commande, une phrase
+    /// (`! open ~/a/b.html`, `cd /a && ls`, `voir /a/b.mp4.`). Guillemets, `file://`, `~`, espaces échappés
+    /// (`\ `, copiés d'un terminal) et numéro de ligne final (`main.swift:42`) acceptés.
     public static func url(from text: String,
                            exists: (String) -> Bool = { FileManager.default.fileExists(atPath: $0) }) -> URL? {
-        guard var line = text.split(whereSeparator: \.isNewline)
-            .lazy.map({ $0.trimmingCharacters(in: .whitespaces) }).first(where: { !$0.isEmpty }),
-            line.count <= 4096 else { return nil }
-        for quote in ["'", "\""] where line.count > 1 && line.hasPrefix(quote) && line.hasSuffix(quote) {
-            line = String(line.dropFirst().dropLast())
+        guard text.utf16.count <= 20_000 else { return nil }
+        var budget = 300   // vérifications sur le disque, au plus
+        for line in text.split(whereSeparator: \.isNewline).prefix(50) {
+            let line = line.trimmingCharacters(in: .whitespaces)
+            guard line.count <= 4096 else { continue }
+            for start in starts(in: line) {
+                // Le plus long d'abord : un chemin peut contenir des espaces ; puis coupé à chaque espace.
+                var piece = line[start...]
+                while true {
+                    if let url = resolve(String(piece), exists: exists, budget: &budget) { return url }
+                    guard budget > 0, let cut = piece.lastIndex(where: \.isWhitespace) else { break }
+                    piece = piece[..<cut]
+                }
+                if budget <= 0 { return nil }
+            }
         }
-        if line.hasPrefix("file://") {
-            guard let path = URL(string: line)?.path, !path.isEmpty else { return nil }
-            line = path
-        }
-        guard line.hasPrefix("/") || line == "~" || line.hasPrefix("~/") else { return nil }
+        return nil
+    }
 
-        let unescaped = line.replacingOccurrences(of: #"\\(.)"#, with: "$1", options: .regularExpression)
-        let withoutLine = unescaped.replacingOccurrences(of: #":\d+(:\d+)?$"#, with: "", options: .regularExpression)
-        for candidate in [line, unescaped, withoutLine] {
-            let path = (candidate as NSString).standardizingPath
-            if exists(path) { return URL(fileURLWithPath: path) }
+    /// Où un chemin peut commencer : `/`, `~/` ou `file://`, en début de ligne ou après un espace,
+    /// un guillemet, `(`, `=`… (pas au milieu d'une URL `https://` ni d'un mot comme « et/ou »).
+    static func starts(in line: String) -> [String.Index] {
+        var result: [String.Index] = []
+        var previous: Character?
+        for index in line.indices {
+            let char = line[index]
+            let boundary = previous.map { $0.isWhitespace || "'\"(=[<`".contains($0) } ?? true
+            if boundary {
+                let rest = line[index...]
+                if char == "/" || rest.hasPrefix("~/") || rest.hasPrefix("file://") { result.append(index) }
+            }
+            previous = char
+        }
+        return result
+    }
+
+    private static func resolve(_ raw: String, exists: (String) -> Bool, budget: inout Int) -> URL? {
+        let trailing = CharacterSet(charactersIn: "'\"`),;.:]>")
+        var forms = [raw]
+        let trimmed = String(raw.unicodeScalars.reversed().drop(while: trailing.contains).reversed().map(Character.init))
+        if trimmed != raw { forms.append(trimmed) }
+        for form in forms {
+            var line = form
+            for quote in ["'", "\""] where line.count > 1 && line.hasPrefix(quote) && line.hasSuffix(quote) {
+                line = String(line.dropFirst().dropLast())
+            }
+            if line.hasPrefix("file://") {
+                guard let path = URL(string: line)?.path, !path.isEmpty else { continue }
+                line = path
+            }
+            guard line.hasPrefix("/") || line.hasPrefix("~/") else { continue }
+            let unescaped = line.replacingOccurrences(of: #"\\(.)"#, with: "$1", options: .regularExpression)
+            let withoutLine = unescaped.replacingOccurrences(of: #":\d+(:\d+)?$"#, with: "", options: .regularExpression)
+            for candidate in [line, unescaped, withoutLine] {
+                budget -= 1
+                guard budget >= 0 else { return nil }
+                let path = (candidate as NSString).standardizingPath
+                if path != "/", exists(path) { return URL(fileURLWithPath: path) }
+            }
         }
         return nil
     }
