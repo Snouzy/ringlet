@@ -11,6 +11,8 @@ private let log = Logger(subsystem: "io.snouzy.ringlet", category: "souris")
     var holdDelay = 0.28
     var onPress: (TriggerContext) -> Void = { _ in }
     var onRelease: () -> Void = {}
+    /// Hors du Finder, le bouton ne sert à Ringlet que là où l'anneau a des textes ; ailleurs le clic reste normal.
+    var buttonWantedOutsideFinder: () -> Bool = { true }
 
     /// Marque nos clics rejoués pour ne pas les intercepter une seconde fois.
     private static let replayMarker: Int64 = 0x524E_4C54
@@ -86,9 +88,13 @@ private let log = Logger(subsystem: "io.snouzy.ringlet", category: "souris")
             guard let button = triggers.button.number, event.getIntegerValueField(.mouseEventButtonNumber) == button
             else { return pass }
             if type == .otherMouseDown {
+                // Dans le Finder, comme le clic droit maintenu : le fichier sous le curseur, ou le dossier de la fenêtre.
+                let context = Self.finderContext(at: event.location)
+                guard context != nil || buttonWantedOutsideFinder() else { return pass }
                 otherButtonDown = true
-                later { $0.onPress(.selection) }
-            } else if otherButtonDown {
+                later { $0.onPress(context ?? .selection) }
+            } else {
+                guard otherButtonDown else { return pass }
                 otherButtonDown = false
                 later { $0.onRelease() }
             }
@@ -98,10 +104,9 @@ private let log = Logger(subsystem: "io.snouzy.ringlet", category: "souris")
         guard triggers.holdRight else { return pass }
         switch type {
         case .rightMouseDown:
-            guard FinderHitTest.isFinder(at: event.location) else { return pass }
+            guard let context = Self.finderContext(at: event.location) else { return pass }
             pendingDown = event.copy()
-            pendingContext = FinderHitTest.fileURL(at: event.location).map(TriggerContext.file)
-                ?? .emptyArea(isDesktop: FinderHitTest.isDesktop(at: event.location))
+            pendingContext = context
             hold.down(at: event.location)
             holdTimer?.invalidate()
             holdTimer = Timer.scheduledTimer(withTimeInterval: holdDelay, repeats: false) { [weak self] _ in
@@ -128,6 +133,13 @@ private let log = Logger(subsystem: "io.snouzy.ringlet", category: "souris")
         default:
             return pass
         }
+    }
+
+    /// Ce que vise un clic dans le Finder ; nil hors du Finder.
+    private static func finderContext(at point: CGPoint) -> TriggerContext? {
+        guard FinderHitTest.isFinder(at: point) else { return nil }
+        return FinderHitTest.fileURL(at: point).map(TriggerContext.file)
+            ?? .emptyArea(isDesktop: FinderHitTest.isDesktop(at: point))
     }
 
     private func holdTimerFired() {

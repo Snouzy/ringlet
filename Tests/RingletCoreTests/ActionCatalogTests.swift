@@ -31,9 +31,10 @@ private func kinds(_ names: String...) -> [ActionKind] {
     #expect(ActionCatalog.actions(for: [], terminal: "Ghostty", editor: "VS Code").isEmpty)
 }
 
-@Test func filesCanGoUpLast() {
+@Test func goUpIsAlwaysTheTopSector() {
     let actions = ActionCatalog.actions(for: [URL(fileURLWithPath: "/tmp/IMG.heic")], terminal: "T", editor: "E", canGoUp: true)
-    #expect(actions.map(\.kind) == [.quickLook, .convertToJPEG, .convertToPNG, .removeGPS, .openTerminal, .openEditor, .copyPath, .goUp])
+    #expect(actions.map(\.kind) == [.goUp, .quickLook, .convertToJPEG, .convertToPNG, .removeGPS, .openTerminal, .openEditor, .copyPath])
+    #expect(RingGeometry.standard(count: actions.count).centerAngle(of: 0) == -90)   // tout en haut
 }
 
 @Test func labelsNameTheChosenApps() {

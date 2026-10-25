@@ -40,6 +40,11 @@ struct RingletApp: App {
         hotKey.onRelease = { [weak self] in self?.ring.triggerReleased() }
         mouse.onPress = { [weak self] context in self?.ring.triggerPressed(context) }
         mouse.onRelease = { [weak self] in self?.ring.triggerReleased() }
+        mouse.buttonWantedOutsideFinder = { [weak self] in
+            guard let self else { return false }
+            let app = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+            return !SnippetCatalog.snippets(prefs.snippets, forApp: app).isEmpty
+        }
         services.onRun = { [weak self] kind, urls in self?.ring.run(kind, on: urls) }
         NSApp.servicesProvider = services
         NSUpdateDynamicServices()

@@ -42,7 +42,9 @@ public enum ActionCatalog {
     public static func actions(for urls: [URL], terminal: String, editor: String, canGoUp: Bool = false) -> [FileAction] {
         guard !urls.isEmpty else { return [] }
         let types = urls.map { UTType(filenameExtension: $0.pathExtension) }
-        var actions = [FileAction(kind: .quickLook, shortLabel: String(localized: "Preview"), symbol: "eye", label: String(localized: "Preview"))]
+        // « Remonter » toujours en premier : le secteur 0 est celui du haut, comme sur l'anneau du dossier.
+        var actions = canGoUp ? [goUp] : []
+        actions.append(FileAction(kind: .quickLook, shortLabel: String(localized: "Preview"), symbol: "eye", label: String(localized: "Preview")))
         if types.allSatisfy({ $0.map(isHEIC) ?? false }) {
             actions.append(FileAction(kind: .convertToJPEG, shortLabel: "JPG", label: String(localized: "Convert to JPG")))
             actions.append(FileAction(kind: .convertToPNG, shortLabel: "PNG", label: String(localized: "Convert to PNG")))
@@ -64,7 +66,6 @@ public enum ActionCatalog {
                                   symbol: "chevron.left.forwardslash.chevron.right", label: String(localized: "Open in \(editor)")))
         actions.append(FileAction(kind: .copyPath, shortLabel: String(localized: "Path"), symbol: "doc.on.clipboard",
                                   label: urls.count == 1 ? String(localized: "Copy path") : String(localized: "Copy paths")))
-        if canGoUp { actions.append(goUp) }
         return actions
     }
 

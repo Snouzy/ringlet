@@ -50,8 +50,10 @@ enum FinderScript {
         tell application "Finder"
             set best to missing value
             set bestLength to 0
-            repeat with w in Finder windows
+            -- Par index : « repeat with w in Finder windows » donne des références que le Finder ne résout pas.
+            repeat with i from 1 to (count of Finder windows)
                 try
+                    set w to Finder window i
                     set shown to POSIX path of (target of w as alias)
                     if \(quoted(item)) starts with shown and (length of shown) > bestLength then
                         set best to w
@@ -66,11 +68,12 @@ enum FinderScript {
                 return
             end if
             if \(quoted(parent)) is \(quoted(fallback)) then return
-            set up to (POSIX file \(quoted(parent)) as alias)
+            -- « up » est un mot réservé du Finder : un autre nom pour le dossier parent.
+            set parentFolder to (POSIX file \(quoted(parent)) as alias)
             if (count of Finder windows) is 0 then
-                open up
+                open parentFolder
             else
-                set target of front Finder window to up
+                set target of front Finder window to parentFolder
             end if
         end tell
         """).map { _ in }

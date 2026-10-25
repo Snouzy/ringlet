@@ -29,7 +29,7 @@ with Apple frameworks only (SwiftUI, ImageIO, AVFoundation).
 | --- | --- | --- |
 | Hold **your shortcut** | Anywhere | None by default: record one in Settings › Triggers. Release on a slice to run it. |
 | Hold the **right mouse button** | Finder | A quick right-click still opens the usual menu. The hold delay is adjustable. |
-| **Middle** or **side** mouse button | Anywhere | Off by default. |
+| **Middle** or **side** mouse button | In the Finder (file under the cursor), and in apps with texts | Off by default. Elsewhere the click stays a normal click. |
 | **Services** menu | Finder right-click | *Convert to JPG / PNG with Ringlet*, no ring needed. |
 
 Then move toward an action and release. Release without aiming and the ring stays open: click a slice, press
@@ -155,11 +155,11 @@ Ringlet est un anneau d'actions pour le Finder. Tu sélectionnes des fichiers, t
 viser précisément ; relâcher sur la croix ou hors de l'anneau annule. L'app est en français sur un Mac en français,
 en anglais sinon.
 
-- **Sur tous les fichiers :** aperçu (Coup d'œil), ouvrir dans le terminal, ouvrir dans l'éditeur de code, copier le chemin, remonter d'un niveau.
+- **Sur tous les fichiers :** remonter d'un niveau (toujours le secteur du haut), aperçu (Coup d'œil), ouvrir dans le terminal, ouvrir dans l'éditeur de code, copier le chemin.
 - **Photos HEIC :** convertir en JPG ou en PNG, métadonnées conservées.
 - **Photos :** copie sans position GPS.
 - **Vidéos :** MP4, 720p, extraire l'audio.
-- **Dans le vide d'une fenêtre :** l'anneau du dossier (terminal, éditeur, nouveau dossier, chemin, remonter).
+- **Dans le vide d'une fenêtre :** l'anneau du dossier (remonter en haut, terminal, éditeur, nouveau dossier, chemin).
 - **Un chemin dans le presse-papiers :** l'afficher dans le Finder, dans chaque anneau ; le dernier chemin copié reste proposé après avoir copié autre chose. Un dossier s'ouvre ; un fichier (ou une app) est sélectionné dans son dossier, jamais ouvert.
 - **Hors du Finder :** tes textes à toi (« OK, oui vas-y. »), tapés là où est le curseur, avec Entrée si tu veux, dans les apps de ton choix.
 
