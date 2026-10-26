@@ -53,6 +53,8 @@ enum RingTarget: Equatable {
     /// Chemin du presse-papiers montré par « Afficher le chemin copié », lu à l'ouverture de l'anneau.
     private var copiedPath: (url: URL, reveal: ClipboardPath.Reveal)?
     private let copiedPaths = CopiedPathMemory()
+    /// Remontées faites depuis l'anneau, pour proposer « Redescendre ».
+    private var descent = Descent()
     private var isHolding = false
     private var hasAimed = false
     private var monitors: [Any] = []
@@ -159,6 +161,10 @@ enum RingTarget: Equatable {
         if let copied = copiedPath {
             actions.append(ClipboardPath.action(for: copied.url, opensFolder: copied.reveal == .openFolder))
         }
+        if let folder = Self.shownFolder(of: resolved) {
+            descent.sync(showing: folder)
+            if let step = descent.step(showing: folder) { actions = Descent.inserting(Descent.action(for: step), into: actions) }
+        }
         guard !actions.isEmpty else { return showMessage(String(localized: "No action here"), isError: true, at: point) }
 
         target = resolved
@@ -179,6 +185,15 @@ enum RingTarget: Equatable {
         panel.makeKey()
         startMonitoring()
         DispatchQueue.main.async { [model] in model.isOpen = true }
+    }
+
+    /// Dossier que montre la fenêtre de l'anneau : celui des fichiers, ou le dossier lui-même.
+    private static func shownFolder(of target: RingTarget) -> String? {
+        switch target {
+        case .files(let urls): FolderTargets.containing(urls)?.path
+        case .folder(let folder, _): folder.path
+        case .app: nil
+        }
     }
 
     private func place(on screen: NSScreen) {
@@ -272,11 +287,21 @@ enum RingTarget: Equatable {
         case .goUp:
             // Comme ⌘↑ dans la fenêtre qui montre l'élément, fichier ou dossier ; pour l'anneau d'un dossier,
             // l'élément est ce dossier, que montre sa propre fenêtre.
+            let result: Result<(from: String, to: String)?, FinderScript.Failure>
+            var item: String?
             if case .folder(let folder, _) = target {
-                report(FinderScript.goUp(showing: folder.path + "/", fallback: folder), at: center)
-            } else if let item = urls.first, let shown = FolderTargets.containing(urls) {
-                report(FinderScript.goUp(showing: item.path, fallback: shown), at: center)
-            }
+                result = FinderScript.goUp(showing: folder.path + "/", fallback: folder)
+            } else if let first = urls.first, let shown = FolderTargets.containing(urls) {
+                result = FinderScript.goUp(showing: first.path, fallback: shown)
+                item = first.path
+            } else { return }
+            if case .success(let moved?) = result { descent.wentUp(from: moved.from, to: moved.to, item: item) }
+            report(result.map { _ in }, at: center)
+        case .goDown:
+            guard let folder = Self.shownFolder(of: target), let step = descent.step(showing: folder) else { return }
+            let result = FinderScript.goDown(from: step.parent, into: step.child, select: step.item)
+            if case .success = result { descent.wentDown() }
+            report(result, at: center)
         case .newFolder:
             report(FinderScript.newFolder(in: urls[0]), at: center)
             // Avec l'Accessibilité, on entre directement dans le renommage, comme ⇧⌘N.

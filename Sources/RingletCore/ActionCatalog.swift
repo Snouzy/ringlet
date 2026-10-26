@@ -14,6 +14,7 @@ public enum ActionKind: String, Sendable, CaseIterable {
     case revealCopiedPath
     // Anneau du dossier
     case goUp
+    case goDown
     case openEditor
     case newFolder
     // Anneau des textes (apps autres que le Finder)

@@ -43,8 +43,9 @@ enum FinderScript {
     /// ⌘↑ sur la fenêtre du Finder qui montre `item` : la plus profonde dont le dossier contient ce chemin (un
     /// dossier se donne avec son « / » final, pour viser sa propre fenêtre). Elle passe au parent du dossier qu'elle
     /// affiche, même si l'élément est plus bas dans une liste dépliée. Sans fenêtre qui le montre, la fenêtre de devant
-    /// (ou une nouvelle) affiche le parent de `fallback`. Sans effet à la racine du disque.
-    @MainActor static func goUp(showing item: String, fallback: URL) -> Result<Void, Failure> {
+    /// (ou une nouvelle) affiche le parent de `fallback`. Rend le dossier quitté et le dossier atteint ; nil à la
+    /// racine du disque, où rien ne bouge.
+    @MainActor static func goUp(showing item: String, fallback: URL) -> Result<(from: String, to: String)?, Failure> {
         let parent = fallback.deletingLastPathComponent()
         return run("""
         tell application "Finder"
@@ -62,12 +63,13 @@ enum FinderScript {
                 end try
             end repeat
             if best is not missing value then
+                set fromPath to POSIX path of (target of best as alias)
                 try
                     set target of best to container of (target of best)
                 end try
-                return
+                return {fromPath, POSIX path of (target of best as alias)}
             end if
-            if \(quoted(parent)) is \(quoted(fallback)) then return
+            if \(quoted(parent)) is \(quoted(fallback)) then return {}
             -- « up » est un mot réservé du Finder : un autre nom pour le dossier parent.
             set parentFolder to (POSIX file \(quoted(parent)) as alias)
             if (count of Finder windows) is 0 then
@@ -75,6 +77,34 @@ enum FinderScript {
             else
                 set target of front Finder window to parentFolder
             end if
+            return {\(quoted(fallback)), \(quoted(parent))}
+        end tell
+        """).map { descriptor in
+            guard let from = descriptor.atIndex(1)?.stringValue, let to = descriptor.atIndex(2)?.stringValue,
+                  from != to else { return nil }
+            return (from, to)
+        }
+    }
+
+    /// Le pendant de `goUp` : la fenêtre qui montre `parent` (celle de devant si plusieurs) revient dans `child`,
+    /// et resélectionne `item` quand il y est.
+    @MainActor static func goDown(from parent: String, into child: String, select item: String?) -> Result<Void, Failure> {
+        let shown = parent.hasSuffix("/") ? parent : parent + "/"   // comme le Finder l'écrit
+        let selectLine = item.map { "if best is front Finder window then set selection to (POSIX file \(quoted($0)) as alias)" } ?? ""
+        return run("""
+        tell application "Finder"
+            set best to missing value
+            repeat with i from (count of Finder windows) to 1 by -1
+                try
+                    set w to Finder window i
+                    if POSIX path of (target of w as alias) is \(quoted(shown)) then set best to w
+                end try
+            end repeat
+            if best is missing value then error number -1728
+            set target of best to (POSIX file \(quoted(child)) as alias)
+            try
+                \(selectLine)
+            end try
         end tell
         """).map { _ in }
     }

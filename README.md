@@ -47,6 +47,7 @@ never modified); a name that is already taken becomes `IMG_8271 2.jpg`.
 | HEIC, JPEG, PNG, TIFF | **Copy without GPS location**: only the location tags are removed, pixels are untouched |
 | Videos | **Convert to MP4** (for non-MP4 files), **shrink to 720p**, **extract the audio** (M4A) |
 | Empty Finder area | **Go up**, **open the terminal here**, **open in your editor** (VS Code, Cursor, Zed…), **new folder**, **copy the folder path** |
+| After going up | **Back down** into the folder you left, at the bottom of the ring, level by level (like Finder's Forward) |
 | A path in the clipboard | **Show it in Finder**, in every ring (the last path you copied stays offered after you copy something else): a folder opens, a file (or an app) is selected in its folder, never opened. Quotes, `~`, `file://`, `\ ` and `:42` line numbers are understood |
 
 <p align="center">
@@ -160,6 +161,7 @@ en anglais sinon.
 - **Photos :** copie sans position GPS.
 - **Vidéos :** MP4, 720p, extraire l'audio.
 - **Dans le vide d'une fenêtre :** l'anneau du dossier (remonter en haut, terminal, éditeur, nouveau dossier, chemin).
+- **Après avoir remonté :** « Redescendre » en bas de l'anneau ramène dans le dossier quitté, niveau par niveau, et resélectionne le fichier visé. Il disparaît dès qu'on va ailleurs, comme « Suivant » dans le Finder.
 - **Un chemin dans le presse-papiers :** l'afficher dans le Finder, dans chaque anneau ; le dernier chemin copié reste proposé après avoir copié autre chose. Un dossier s'ouvre ; un fichier (ou une app) est sélectionné dans son dossier, jamais ouvert.
 - **Hors du Finder :** tes textes à toi (« OK, oui vas-y. »), tapés là où est le curseur, avec Entrée si tu veux, dans les apps de ton choix.
 

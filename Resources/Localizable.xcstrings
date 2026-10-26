@@ -242,6 +242,16 @@
         }
       }
     },
+    "Back down into “%@”": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redescendre dans « %@ »"
+          }
+        }
+      }
+    },
     "Blue": {
       "localizations": {
         "fr": {
@@ -468,6 +478,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cadran"
+          }
+        }
+      }
+    },
+    "Down": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bas"
           }
         }
       }
