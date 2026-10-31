@@ -43,7 +43,7 @@ struct RingletApp: App {
         mouse.buttonWantedOutsideFinder = { [weak self] in
             guard let self else { return false }
             let app = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
-            return !SnippetCatalog.snippets(prefs.snippets, forApp: app).isEmpty
+            return prefs.pasteInTextsRing || !SnippetCatalog.snippets(prefs.snippets, forApp: app).isEmpty
         }
         services.onRun = { [weak self] kind, urls in self?.ring.run(kind, on: urls) }
         NSApp.servicesProvider = services
@@ -82,6 +82,9 @@ struct RingletApp: App {
         ring.terminal = prefs.terminal
         ring.editor = prefs.editor
         ring.snippets = prefs.snippets
+        ring.pasteInTextsRing = prefs.pasteInTextsRing
+        ring.fileHours = prefs.resolvedFileHours
+        ring.textHours = prefs.resolvedTextHours
     }
 
     func showSettings() {

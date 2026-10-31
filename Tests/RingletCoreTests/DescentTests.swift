@@ -40,14 +40,3 @@ private let drive = "/Users/m/Drive"
     #expect(d.steps.count == 1)
     #expect(d.step(showing: "/tmp/x")?.child == "/tmp/x/y")
 }
-
-@Test func downSitsAtTheBottomOfTheRing() {
-    let a = (0..<5).map { FileAction(kind: .copyPath, shortLabel: "\($0)", label: "\($0)") }
-    let down = FileAction(kind: .goDown, shortLabel: "D", label: "D")
-    let ring = Descent.inserting(down, into: a)
-    let index = ring.firstIndex { $0.kind == .goDown }!
-    #expect(RingGeometry.standard(count: ring.count).centerAngle(of: index) == 90)   // tout en bas
-    let odd = Descent.inserting(down, into: Array(a.prefix(4)))
-    let angle = RingGeometry.standard(count: odd.count).centerAngle(of: odd.firstIndex { $0.kind == .goDown }!)
-    #expect(abs(angle - 90) <= 360 / Double(odd.count) / 2)   // le secteur le plus proche du bas
-}

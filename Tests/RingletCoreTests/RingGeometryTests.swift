@@ -53,3 +53,32 @@ import Testing
     let narrow = CGRect(x: 0, y: 0, width: 200, height: 600)
     #expect(RingGeometry.clampedCenter(CGPoint(x: 10, y: 300), outerRadius: 120, in: narrow).x == 100)
 }
+
+@Test func unevenSectorsReachHalfwayToTheirNeighbours() {
+    // Remonter à 12 h, Terminal à 9 h, Chemin à 5 h : chaque secteur va jusqu'à mi-chemin du voisin.
+    let ring = RingGeometry(angles: [-90, 180, 60], radius: 84, deadZone: 16)
+    #expect(ring.count == 3)
+    #expect(ring.centerAngle(of: 0) == -90)
+    #expect(ring.bounds(of: 0) == (start: -135, end: -15))    // entre 9 h et 12 h, puis entre 12 h et 5 h
+    #expect(ring.bounds(of: 1) == (start: 120, end: 225))     // 5 h → 9 h, 9 h → 12 h
+    #expect(ring.bounds(of: 2) == (start: -15, end: 120))
+    #expect(ring.sector(dx: 30, dy: -30) == 0)      // 1 h 30 : encore Remonter
+    #expect(ring.sector(dx: 30, dy: 10) == 2)       // 3 h 30 : Chemin
+    #expect(ring.sector(dx: -30, dy: 30) == 1)      // 7 h 30 : Terminal
+    #expect(ring.sector(dx: -30, dy: -25) == 1)     // 10 h 20 : Terminal, pas encore Remonter
+    #expect(ring.sector(dx: -30, dy: -35) == 0)     // 10 h 40 : Remonter
+}
+
+@Test func aSingleSectorCoversTheWholeRing() {
+    let ring = RingGeometry(angles: [90], radius: 84, deadZone: 16)
+    #expect(ring.sector(dx: 0, dy: -50) == 0)
+    #expect(ring.sector(dx: 50, dy: 0) == 0)
+    #expect(ring.bounds(of: 0).end - ring.bounds(of: 0).start == 360)
+}
+
+@Test func equalSectorsAreTheSameWhateverTheInitializer() {
+    let equal = RingGeometry(count: 4, radius: 84, deadZone: 16)
+    let angled = RingGeometry(angles: [-90, 0, 90, 180], radius: 84, deadZone: 16)
+    #expect(equal == angled)
+    #expect(equal.bounds(of: 1) == (start: -45, end: 45))
+}

@@ -143,11 +143,11 @@ struct AppearanceTab: View {
 
     private var preview: some View {
         GeometryReader { proxy in
-            let geometry = RingGeometry.standard(count: sample.count, size: prefs.ringSize)
+            let (actions, geometry) = RingHours.ring(sample, hours: prefs.resolvedFileHours, size: prefs.ringSize)
             let center = CGPoint(x: proxy.size.width / 2, y: proxy.size.height / 2 - 18)
             ZStack {
                 Wallpaper()
-                RingFace(actions: sample, geometry: geometry, hot: hot, cancelHot: cancelHot, isOpen: isOpen, look: prefs.look)
+                RingFace(actions: actions, geometry: geometry, hot: hot, cancelHot: cancelHot, isOpen: isOpen, look: prefs.look)
                     .position(center)
             }
             .contentShape(Rectangle())
@@ -284,14 +284,36 @@ private struct TriggersTab: View {
     }
 }
 
-private struct ActionsTab: View {
+struct ActionsTab: View {
     @Bindable var prefs: Preferences
+    @State private var dial = DialRing.files
+
+    /// Les deux anneaux dont on règle les heures : celui du Finder (fichiers et dossier), celui des textes.
+    private enum DialRing { case files, texts }
 
     var body: some View {
         Form {
             Section("Apps") {
                 AppPicker(title: "Terminal", choice: $prefs.terminal, candidates: AppChoice.terminals)
                 AppPicker(title: "Editor", choice: $prefs.editor, candidates: AppChoice.editors)
+            }
+            Section("Positions in the ring") {
+                Picker("Ring", selection: $dial) {
+                    Text("Files and folders").tag(DialRing.files)
+                    Text("Texts").tag(DialRing.texts)
+                }
+                .pickerStyle(.segmented).labelsHidden()
+                HourDial(actions: dialActions, hours: dial == .files ? prefs.resolvedFileHours : prefs.resolvedTextHours) { action, hour in
+                    if dial == .files { prefs.fileHours[action.id] = hour } else { prefs.textHours[action.id] = hour }
+                }
+                .frame(maxWidth: .infinity)
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Drag an action to its hour. The ring keeps these directions; when few actions apply, they spread out so they don’t crowd.")
+                        .foregroundStyle(.secondary).font(.callout)
+                    Spacer()
+                    Button("Reset") { if dial == .files { prefs.fileHours = [:] } else { prefs.textHours = [:] } }
+                        .disabled(dial == .files ? prefs.fileHours.isEmpty : prefs.textHours.isEmpty)
+                }
             }
             Section("Photos") {
                 LabeledContent("JPG quality") {
@@ -306,6 +328,16 @@ private struct ActionsTab: View {
         }
         .formStyle(.grouped)
     }
+
+    private var dialActions: [FileAction] {
+        switch dial {
+        case .files:
+            ActionCatalog.everyFileAction(terminal: prefs.terminal.name, editor: prefs.editor.name)
+        case .texts:
+            SnippetCatalog.actions(for: prefs.snippets.filter { !$0.text.isEmpty }, paste: prefs.pasteInTextsRing)
+                + [ActionCatalog.revealCopiedPath]
+        }
+    }
 }
 
 /// Textes que l'anneau tape hors du Finder : un par tranche, dans les apps choisies.
@@ -319,6 +351,7 @@ struct TextsTab: View {
             Section {
                 Text("Outside the Finder, the ring shows the texts of the app in front (up to \(SnippetCatalog.maxPerRing)) and types the one you pick where your cursor is.")
                     .foregroundStyle(.secondary).font(.callout)
+                Toggle("Offer Paste (⌘V) in the ring", isOn: $prefs.pasteInTextsRing)
                 if !trusted {
                     HStack {
                         Label("Typing needs the Accessibility permission.", systemImage: "exclamationmark.triangle.fill")

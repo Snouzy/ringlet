@@ -58,12 +58,4 @@ public struct Descent: Sendable, Equatable {
         return FileAction(kind: .goDown, shortLabel: String(localized: "Down"), symbol: "arrow.down",
                           label: String(localized: "Back down into “\(name)”"))
     }
-
-    /// Place « Redescendre » en bas de l'anneau, à l'opposé de « Remonter » (secteur 0, en haut).
-    /// Avec un nombre impair de secteurs, le plus proche du bas, juste à droite.
-    public static func inserting(_ down: FileAction, into actions: [FileAction]) -> [FileAction] {
-        var result = actions
-        result.insert(down, at: (actions.count + 1) / 2)
-        return result
-    }
 }

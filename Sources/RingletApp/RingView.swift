@@ -85,7 +85,7 @@ private struct RingFaceContent: View {
     var body: some View {
         ZStack {
             if isGlass { glassDisc } else { dialDisc }
-            Spokes(count: actions.count, from: inner + 2, to: outer - (isGlass ? 8 : 16))
+            Spokes(geometry: geometry, from: inner + 2, to: outer - (isGlass ? 8 : 16))
                 .stroke(isGlass ? Color.white.opacity(scheme == .dark ? 0.2 : 0.55) : Color.white.opacity(0.07), lineWidth: 1)
             if let index = hotIndex { hotMark(index) }
             ForEach(Array(actions.enumerated()), id: \.element.id) { index, action in
@@ -119,24 +119,24 @@ private struct RingFaceContent: View {
             .overlay(Circle().fill(RadialGradient(colors: [Color(white: 0.18).opacity(0.84), Color(white: 0.07).opacity(0.9)],
                                                   center: UnitPoint(x: 0.5, y: 0.35), startRadius: 0, endRadius: outer)))
             .overlay(Circle().strokeBorder(Color.white.opacity(0.14), lineWidth: 0.5))
-            .overlay(Ticks(count: actions.count, outer: outer, major: false).stroke(Color.white.opacity(0.2), style: StrokeStyle(lineWidth: 1.2, lineCap: .round)))
-            .overlay(Ticks(count: actions.count, outer: outer, major: true).stroke(Color.white.opacity(0.42), style: StrokeStyle(lineWidth: 1.2, lineCap: .round)))
+            .overlay(Ticks(geometry: geometry, outer: outer, major: false).stroke(Color.white.opacity(0.2), style: StrokeStyle(lineWidth: 1.2, lineCap: .round)))
+            .overlay(Ticks(geometry: geometry, outer: outer, major: true).stroke(Color.white.opacity(0.42), style: StrokeStyle(lineWidth: 1.2, lineCap: .round)))
             .shadow(color: .black.opacity(0.45), radius: 20, y: 12)
     }
 
     // MARK: Secteur visé
 
     @ViewBuilder private func hotMark(_ index: Int) -> some View {
-        let mid = geometry.centerAngle(of: index), half = geometry.sectorWidth / 2
+        let (start, end) = geometry.bounds(of: index)
         if isGlass {
-            RoundedSector(start: mid - half, end: mid + half, inner: inner + 3, outer: outer - 6, gap: 5, corner: 5)
+            RoundedSector(start: start, end: end, inner: inner + 3, outer: outer - 6, gap: 5, corner: 5)
                 .filled(accent, opacity: 0.9)
                 .shadow(color: accent.opacity(0.6), radius: 10)
         } else {
             ZStack {
-                RoundedSector(start: mid - half, end: mid + half, inner: inner + 2, outer: outer - 15, gap: 5, corner: 5)
+                RoundedSector(start: start, end: end, inner: inner + 2, outer: outer - 15, gap: 5, corner: 5)
                     .filled(accent, opacity: 0.24)
-                Bezel(start: mid - half + 5, end: mid + half - 5, radius: outer - 7.5)
+                Bezel(start: start + 5, end: end - 5, radius: outer - 7.5)
                     .stroke(accent, style: StrokeStyle(lineWidth: 4.5, lineCap: .round))
                     .shadow(color: accent, radius: 6)
             }
@@ -154,7 +154,7 @@ private struct RingFaceContent: View {
                 // Libellé d'un texte : deux lignes au plus, rétréci plutôt que coupé.
                 Text(action.shortLabel).font(.system(size: 13, weight: .bold))
                     .multilineTextAlignment(.center).lineLimit(2).minimumScaleFactor(0.7)
-                    .frame(width: min(76, 2 * .pi * radius / Double(max(actions.count, 1)) * 0.85))
+                    .frame(width: min(76, (geometry.bounds(of: index).end - geometry.bounds(of: index).start) * .pi / 180 * radius * 0.85))
             }
         }
         .foregroundStyle(isHot ? Color.white : Color.primary.opacity(isGlass ? 1 : 0.86))
@@ -243,18 +243,18 @@ struct RoundedSector: Shape {
     }
 }
 
-/// Séparations entre les secteurs.
+/// Séparations entre les secteurs, au début de chacun.
 private struct Spokes: Shape {
-    var count: Int
+    var geometry: RingGeometry
     var from: Double
     var to: Double
 
     func path(in rect: CGRect) -> Path {
         var path = Path()
-        guard count > 1 else { return path }
-        let center = CGPoint(x: rect.midX, y: rect.midY), width = 360 / Double(count)
-        for index in 0..<count {
-            let angle = (-90 + Double(index) * width - width / 2) * .pi / 180
+        guard geometry.count > 1 else { return path }
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        for sector in geometry.sectors {
+            let angle = sector.start * .pi / 180
             path.move(to: CGPoint(x: center.x + cos(angle) * from, y: center.y + sin(angle) * from))
             path.addLine(to: CGPoint(x: center.x + cos(angle) * to, y: center.y + sin(angle) * to))
         }
@@ -264,17 +264,17 @@ private struct Spokes: Shape {
 
 /// Graduation du cadran : un trait fort à chaque limite de secteur, sept traits fins entre deux.
 private struct Ticks: Shape {
-    var count: Int
+    var geometry: RingGeometry
     var outer: Double
     var major: Bool
 
     func path(in rect: CGRect) -> Path {
         var path = Path()
-        guard count > 0 else { return path }
-        let center = CGPoint(x: rect.midX, y: rect.midY), width = 360 / Double(count)
-        for index in 0..<count {
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        for sector in geometry.sectors {
+            let width = sector.end - sector.start
             for step in 0..<8 where (step == 0) == major {
-                let angle = (-90 + Double(index) * width - width / 2 + Double(step) * width / 8) * .pi / 180
+                let angle = (sector.start + Double(step) * width / 8) * .pi / 180
                 let length = major ? 11.0 : 8.0
                 path.move(to: CGPoint(x: center.x + cos(angle) * (outer - 4), y: center.y + sin(angle) * (outer - 4)))
                 path.addLine(to: CGPoint(x: center.x + cos(angle) * (outer - length), y: center.y + sin(angle) * (outer - length)))

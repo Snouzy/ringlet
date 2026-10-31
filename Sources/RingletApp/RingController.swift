@@ -46,6 +46,10 @@ enum RingTarget: Equatable {
     var terminal = AppChoice(bundleID: "com.apple.Terminal")
     var editor = AppChoice(bundleID: "com.microsoft.VSCode")
     var snippets: [TextSnippet] = []
+    var pasteInTextsRing = false
+    /// Heure de chaque action (réglages), pour l'anneau du Finder et pour celui des textes.
+    var fileHours = RingHours.fileDefaults
+    var textHours = RingHours.textDefaults
 
     private let model = RingModel()
     private let panel = RingPanel()
@@ -155,7 +159,7 @@ enum RingTarget: Equatable {
         case .folder(_, let isDesktop):
             actions = ActionCatalog.folderActions(isDesktop: isDesktop, terminal: terminal.name, editor: editor.name)
         case .app(let app):
-            actions = SnippetCatalog.actions(for: SnippetCatalog.snippets(snippets, forApp: app))
+            actions = SnippetCatalog.actions(for: SnippetCatalog.snippets(snippets, forApp: app), paste: pasteInTextsRing)
         }
         copiedPath = readCopiedPath()
         if let copied = copiedPath {
@@ -163,7 +167,7 @@ enum RingTarget: Equatable {
         }
         if let folder = Self.shownFolder(of: resolved) {
             descent.sync(showing: folder)
-            if let step = descent.step(showing: folder) { actions = Descent.inserting(Descent.action(for: step), into: actions) }
+            if let step = descent.step(showing: folder) { actions.append(Descent.action(for: step)) }
         }
         guard !actions.isEmpty else { return showMessage(String(localized: "No action here"), isError: true, at: point) }
 
@@ -171,8 +175,10 @@ enum RingTarget: Equatable {
         hasAimed = false
         hideTask?.cancel()
         model.message = nil
-        model.actions = actions
-        model.geometry = .standard(count: actions.count, size: ringSize)
+        let isTexts = if case .app = resolved { true } else { false }
+        let ring = RingHours.ring(actions, hours: isTexts ? textHours : fileHours, size: ringSize)
+        model.actions = ring.actions
+        model.geometry = ring.geometry
         model.look = look
         model.center = RingGeometry.clampedCenter(point, outerRadius: model.geometry.radius + 40,
                                                   in: CGRect(origin: .zero, size: panel.frame.size))
@@ -282,6 +288,8 @@ enum RingTarget: Equatable {
             open(urls, with: editor, messageAt: center)
         case .quickLook:
             QuickLook.shared.show(urls)
+        case .paste:
+            afterPanelLeaves(messageAt: center) { TextTyper.paste() }
         case .revealCopiedPath:
             if let copied = copiedPath { reveal(copied.url, copied.reveal, messageAt: center) }
         case .goUp:
@@ -313,15 +321,18 @@ enum RingTarget: Equatable {
         }
     }
 
-    /// Le panneau vient de partir : on laisse le clavier revenir à l'app avant de taper.
     private func type(_ snippet: TextSnippet, messageAt center: CGPoint) {
+        afterPanelLeaves(messageAt: center) { TextTyper.type(snippet.text, pressReturn: snippet.pressReturn) }
+    }
+
+    /// Frappe dans l'app au premier plan (texte, ⌘V) : demande l'Accessibilité, et attend que le panneau soit parti
+    /// pour que le clavier soit revenu à l'app.
+    private func afterPanelLeaves(messageAt center: CGPoint, _ keystrokes: @escaping @MainActor () -> Void) {
         guard TextTyper.canType else {
             Permissions.requestAccessibility()
             return showMessage(String(localized: "Typing a text needs the Accessibility permission"), isError: true, at: center, duration: 3)
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
-            TextTyper.type(snippet.text, pressReturn: snippet.pressReturn)
-        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08, execute: keystrokes)
     }
 
     private func createFiles(_ kind: ActionKind, from files: [URL], messageAt center: CGPoint) {

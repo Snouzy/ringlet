@@ -47,3 +47,12 @@ private let ghostty = "com.mitchellh.ghostty"
     let data = try JSONEncoder().encode([snippet])
     #expect(try JSONDecoder().decode([TextSnippet].self, from: data) == [snippet])
 }
+
+@Test func pasteIsTheTopSliceWhenOffered() {
+    let a = TextSnippet(text: "Oui")
+    #expect(SnippetCatalog.actions(for: [a], paste: true).map(\.kind) == [.paste, .typeText])
+    #expect(SnippetCatalog.actions(for: [], paste: true).map(\.kind) == [.paste])
+    #expect(SnippetCatalog.actions(for: [a], paste: false).map(\.kind) == [.typeText])
+    #expect(SnippetCatalog.actions(for: [a]).map(\.kind) == [.typeText])
+    #expect(SnippetCatalog.actions(for: [], paste: true)[0].symbol != nil)
+}

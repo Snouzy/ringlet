@@ -54,12 +54,26 @@ never modified); a name that is already taken becomes `IMG_8271 2.jpg`.
   <img src="docs/images/folder.png" alt="The folder ring: go up, open the terminal, open in the editor, new folder, copy the path" width="760">
 </p>
 
+### Where each action goes
+
+Every action has its **hour** on the ring, like on a clock face: Go up at 12, Preview at 1, Terminal at 9… and keeps
+it whatever the selection, so your hand learns the directions. When some actions don't apply (no video, nothing to
+convert), the others widen to fill the gap instead of shifting around; a sparse ring spreads its few actions apart
+so they never crowd one side. Change the hours in Settings › Actions by
+dragging each action on a dial; two actions that never show up together can share an hour (JPG and MP4 do), and if
+they ever meet, the second one takes the next free hour.
+
+<p align="center">
+  <img src="docs/images/actions-settings.png" alt="The Actions settings tab: a dial with each action on its hour, to drag" width="560">
+</p>
+
 ## Texts in any app
 
 Outside the Finder, the ring shows **your own texts** for the app in front and types the one you pick where your
 cursor is, without touching the clipboard. Answer a coding agent in your terminal with *Yes, go ahead.* in one
 gesture, or keep canned replies for Slack. Each text can press **Return** after, and appears in every app or only in
 the ones you choose (up to 8 per ring). Set them up in Settings › Texts; typing needs the Accessibility permission.
+Turn on **Paste (⌘V)** there to get a paste slice in this ring (at 12 o'clock unless you move it), with or without texts for the app.
 
 <p align="center">
   <img src="docs/images/texts.png" alt="The ring open over a terminal with canned replies: Yes go, Tests first, Explain, Stop, Thanks" width="860">

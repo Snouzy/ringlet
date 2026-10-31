@@ -46,7 +46,12 @@ public enum SnippetCatalog {
         return Array(matching.prefix(maxPerRing))
     }
 
-    public static func actions(for snippets: [TextSnippet]) -> [FileAction] {
-        snippets.map { FileAction(kind: .typeText, shortLabel: $0.shortLabel, label: $0.caption, snippet: $0) }
+    /// Les textes, chacun sa tranche ; avec `paste`, « Coller » (⌘V) d'abord, toujours en haut de l'anneau.
+    public static func actions(for snippets: [TextSnippet], paste: Bool = false) -> [FileAction] {
+        let texts = snippets.map { FileAction(kind: .typeText, shortLabel: $0.shortLabel, label: $0.caption, snippet: $0) }
+        return paste ? [pasteAction] + texts : texts
     }
+
+    static let pasteAction = FileAction(kind: .paste, shortLabel: String(localized: "Paste"), symbol: "doc.on.clipboard",
+                                        label: String(localized: "Paste (⌘V)"))
 }

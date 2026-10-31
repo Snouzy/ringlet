@@ -24,6 +24,8 @@ import SwiftUI
         let prefs = Preferences(defaults: UserDefaults(suiteName: "io.snouzy.ringlet.screenshots") ?? .standard)
         render(SettingsShot(selected: String(localized: "Appearance")) { AppearanceTab(prefs: prefs, hot: 1) },
                size: CGSize(width: SettingsWindow.width, height: 748), dark: true, to: dir.appendingPathComponent("settings.png"))
+        render(SettingsShot(selected: String(localized: "Actions")) { ActionsTab(prefs: prefs) },
+               size: CGSize(width: SettingsWindow.width, height: 736), dark: true, to: dir.appendingPathComponent("actions-settings.png"))
         prefs.snippets = Array(Self.snippets.prefix(3))
         render(TerminalScene(actions: SnippetCatalog.actions(for: Self.snippets)), size: CGSize(width: 1280, height: 760),
                dark: true, to: dir.appendingPathComponent("texts.png"))
@@ -72,8 +74,8 @@ private struct Scene: View {
                 MockFinder(selected: selected)
                     .frame(width: proxy.size.width * 0.74, height: proxy.size.height * 0.78)
                     .position(x: proxy.size.width * 0.45, y: proxy.size.height * 0.5)
-                RingFace(actions: actions, geometry: .standard(count: actions.count, size: .large), hot: hot,
-                         cancelHot: false, isOpen: true, look: look)
+                let ring = RingHours.ring(actions, hours: RingHours.fileDefaults, size: .large)
+                RingFace(actions: ring.actions, geometry: ring.geometry, hot: hot, cancelHot: false, isOpen: true, look: look)
                     .position(x: proxy.size.width * ringAt.x, y: proxy.size.height * ringAt.y)
             }
         }
@@ -97,8 +99,8 @@ private struct SocialCard: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                RingFace(actions: actions, geometry: .standard(count: actions.count, size: .large), hot: 1,
-                         cancelHot: false, isOpen: true, look: RingLook(style: .glass))
+                let ring = RingHours.ring(actions, hours: RingHours.fileDefaults, size: .large)
+                RingFace(actions: ring.actions, geometry: ring.geometry, hot: 1, cancelHot: false, isOpen: true, look: RingLook(style: .glass))
                     .scaleEffect(1.4)
                     .frame(width: 460, height: 560)
             }
@@ -213,8 +215,8 @@ private struct TerminalScene: View {
                 .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.white.opacity(0.12), lineWidth: 1))
                 .shadow(color: .black.opacity(0.4), radius: 30, y: 16)
                 .position(x: proxy.size.width * 0.45, y: proxy.size.height * 0.5)
-                RingFace(actions: actions, geometry: .standard(count: actions.count, size: .large), hot: 0,
-                         cancelHot: false, isOpen: true, look: RingLook(style: .glass))
+                let ring = RingHours.ring(actions, hours: RingHours.textDefaults, size: .large)
+                RingFace(actions: ring.actions, geometry: ring.geometry, hot: 0, cancelHot: false, isOpen: true, look: RingLook(style: .glass))
                     .position(x: proxy.size.width * 0.58, y: proxy.size.height * 0.5)
             }
         }

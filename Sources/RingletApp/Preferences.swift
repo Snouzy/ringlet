@@ -59,6 +59,11 @@ struct MouseTriggers: Equatable {
     var editor: AppChoice { didSet { save(); onChange() } }
     /// Textes de l'anneau hors du Finder.
     var snippets: [TextSnippet] { didSet { save(); onChange() } }
+    /// Tranche « Coller » (⌘V) dans l'anneau hors du Finder.
+    var pasteInTextsRing: Bool { didSet { save(); onChange() } }
+    /// Heures choisies pour les actions, par identifiant d'action ; ce qui manque garde l'heure par défaut.
+    var fileHours: [String: Int] { didSet { save(); onChange() } }
+    var textHours: [String: Int] { didSet { save(); onChange() } }
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -88,6 +93,9 @@ struct MouseTriggers: Equatable {
         editor = defaults.string(forKey: "editor").map(AppChoice.init)
             ?? AppChoice.firstInstalled(AppChoice.editors, fallback: "com.microsoft.VSCode")
         snippets = defaults.data(forKey: "snippets").flatMap { try? JSONDecoder().decode([TextSnippet].self, from: $0) } ?? []
+        pasteInTextsRing = defaults.bool(forKey: "pasteInTextsRing")
+        fileHours = defaults.data(forKey: "fileHours").flatMap { try? JSONDecoder().decode([String: Int].self, from: $0) } ?? [:]
+        textHours = defaults.data(forKey: "textHours").flatMap { try? JSONDecoder().decode([String: Int].self, from: $0) } ?? [:]
     }
 
     private func save() {
@@ -106,11 +114,18 @@ struct MouseTriggers: Equatable {
         defaults.set(terminal.bundleID, forKey: "terminal")
         defaults.set(editor.bundleID, forKey: "editor")
         defaults.set(try? JSONEncoder().encode(snippets), forKey: "snippets")
+        defaults.set(pasteInTextsRing, forKey: "pasteInTextsRing")
+        defaults.set(try? JSONEncoder().encode(fileHours), forKey: "fileHours")
+        defaults.set(try? JSONEncoder().encode(textHours), forKey: "textHours")
     }
 }
 
 extension Preferences {
     var mouseTriggers: MouseTriggers { MouseTriggers(holdRight: holdRightInFinder, button: mouseButton) }
+
+    /// Heures effectives : celles par défaut, recouvertes par les choix.
+    var resolvedFileHours: [String: Int] { RingHours.fileDefaults.merging(fileHours) { $1 } }
+    var resolvedTextHours: [String: Int] { RingHours.textDefaults.merging(textHours) { $1 } }
 
     var look: RingLook {
         RingLook(style: ringStyle, accent: accent, glassOpacity: glassOpacity, reduceMotion: reduceMotion)

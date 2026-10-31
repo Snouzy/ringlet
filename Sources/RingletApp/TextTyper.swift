@@ -16,6 +16,16 @@ import Carbon.HIToolbox
         if pressReturn { press(kVK_Return, source: source) }
     }
 
+    /// ⌘V dans l'app au premier plan : elle colle son presse-papiers elle-même, comme au clavier.
+    static func paste() {
+        let source = CGEventSource(stateID: .hidSystemState)
+        for down in [true, false] {
+            guard let event = CGEvent(keyboardEventSource: source, virtualKey: CGKeyCode(kVK_ANSI_V), keyDown: down) else { continue }
+            event.flags = .maskCommand
+            event.post(tap: .cghidEventTap)
+        }
+    }
+
     /// Par paquets : un évènement porte au plus une vingtaine de caractères UTF-16.
     private static func typeLine(_ line: String, source: CGEventSource?) {
         let units = Array(line.utf16)

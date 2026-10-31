@@ -19,6 +19,7 @@ public enum ActionKind: String, Sendable, CaseIterable {
     case newFolder
     // Anneau des textes (apps autres que le Finder)
     case typeText
+    case paste
 }
 
 /// Une action de l'anneau : `symbol` (SF Symbol) ou à défaut `shortLabel` dans le secteur, `label` sous l'anneau.
@@ -36,61 +37,85 @@ public struct FileAction: Sendable, Equatable, Identifiable {
     }
 }
 
-/// Actions proposées : l'aperçu en haut de l'anneau, puis celles qui valent pour tous les fichiers sélectionnés
-/// (conversions), puis terminal, éditeur et chemin, qui valent pour tout, et « Remonter »
-/// quand les fichiers sont dans une fenêtre du Finder (pas sur le bureau).
+/// Actions proposées : « Remonter » quand les fichiers sont dans une fenêtre du Finder (pas sur le bureau),
+/// l'aperçu, celles qui valent pour tous les fichiers sélectionnés (conversions), puis terminal, éditeur et chemin,
+/// qui valent pour tout. Leur place dans l'anneau vient de `RingHours`, pas de cet ordre.
 public enum ActionCatalog {
     public static func actions(for urls: [URL], terminal: String, editor: String, canGoUp: Bool = false) -> [FileAction] {
         guard !urls.isEmpty else { return [] }
         let types = urls.map { UTType(filenameExtension: $0.pathExtension) }
-        // « Remonter » toujours en premier : le secteur 0 est celui du haut, comme sur l'anneau du dossier.
         var actions = canGoUp ? [goUp] : []
-        actions.append(FileAction(kind: .quickLook, shortLabel: String(localized: "Preview"), symbol: "eye", label: String(localized: "Preview")))
+        actions.append(quickLook)
         if types.allSatisfy({ $0.map(isHEIC) ?? false }) {
-            actions.append(FileAction(kind: .convertToJPEG, shortLabel: "JPG", label: String(localized: "Convert to JPG")))
-            actions.append(FileAction(kind: .convertToPNG, shortLabel: "PNG", label: String(localized: "Convert to PNG")))
+            actions += [convertToJPEG, convertToPNG]
         }
         if types.allSatisfy({ $0.map(MetadataStripper.supports) ?? false }) {
-            actions.append(FileAction(kind: .removeGPS, shortLabel: "GPS", symbol: "location.slash",
-                                      label: String(localized: "Copy without GPS location")))
+            actions.append(removeGPS)
         }
         if types.allSatisfy({ $0?.conforms(to: .movie) ?? false }) {
             if !types.contains(where: { $0?.conforms(to: .mpeg4Movie) ?? false }) {
-                actions.append(FileAction(kind: .videoToMP4, shortLabel: "MP4", label: String(localized: "Convert to MP4")))
+                actions.append(videoToMP4)
             }
-            actions.append(FileAction(kind: .videoTo720p, shortLabel: "720p", label: String(localized: "Shrink to 720p")))
-            actions.append(FileAction(kind: .extractAudio, shortLabel: "M4A", symbol: "waveform", label: String(localized: "Extract audio")))
+            actions += [videoTo720p, extractAudio]
         }
-        actions.append(FileAction(kind: .openTerminal, shortLabel: String(localized: "Terminal"), symbol: "terminal",
-                                  label: String(localized: "Open in \(terminal)")))
-        actions.append(FileAction(kind: .openEditor, shortLabel: String(localized: "Editor"),
-                                  symbol: "chevron.left.forwardslash.chevron.right", label: String(localized: "Open in \(editor)")))
-        actions.append(FileAction(kind: .copyPath, shortLabel: String(localized: "Path"), symbol: "doc.on.clipboard",
-                                  label: urls.count == 1 ? String(localized: "Copy path") : String(localized: "Copy paths")))
+        actions += [
+            openTerminal(label: String(localized: "Open in \(terminal)")),
+            openEditor(editor),
+            copyPath(label: urls.count == 1 ? String(localized: "Copy path") : String(localized: "Copy paths")),
+        ]
         return actions
     }
 
-    /// Anneau du dossier (clic dans le vide, ou aucun fichier sélectionné). « Remonter » en haut, sauf sur le bureau.
+    /// Anneau du dossier (clic dans le vide, ou aucun fichier sélectionné). « Remonter », sauf sur le bureau.
     public static func folderActions(isDesktop: Bool, terminal: String, editor: String) -> [FileAction] {
         var actions: [FileAction] = []
         if !isDesktop {
             actions.append(goUp)
         }
         actions += [
-            FileAction(kind: .openTerminal, shortLabel: String(localized: "Terminal"), symbol: "terminal",
-                       label: String(localized: "Open \(terminal) here")),
-            FileAction(kind: .openEditor, shortLabel: String(localized: "Editor"), symbol: "chevron.left.forwardslash.chevron.right",
-                       label: String(localized: "Open in \(editor)")),
-            FileAction(kind: .newFolder, shortLabel: String(localized: "Folder"), symbol: "folder.badge.plus",
-                       label: String(localized: "New folder")),
-            FileAction(kind: .copyPath, shortLabel: String(localized: "Path"), symbol: "doc.on.clipboard",
-                       label: String(localized: "Copy folder path")),
+            openTerminal(label: String(localized: "Open \(terminal) here")),
+            openEditor(editor),
+            newFolder,
+            copyPath(label: String(localized: "Copy folder path")),
         ]
         return actions
     }
 
+    /// Toutes les actions des anneaux du Finder, une par sorte, pour choisir leur heure dans les réglages.
+    public static func everyFileAction(terminal: String, editor: String) -> [FileAction] {
+        [goUp, quickLook, convertToJPEG, convertToPNG, removeGPS, videoToMP4, videoTo720p, extractAudio,
+         openTerminal(label: String(localized: "Open in \(terminal)")), openEditor(editor), newFolder,
+         copyPath(label: String(localized: "Copy path")), revealCopiedPath, goDown]
+    }
+
     static let goUp = FileAction(kind: .goUp, shortLabel: String(localized: "Up"), symbol: "arrow.up",
                                  label: String(localized: "Go up one level"))
+    static let quickLook = FileAction(kind: .quickLook, shortLabel: String(localized: "Preview"), symbol: "eye", label: String(localized: "Preview"))
+    static let convertToJPEG = FileAction(kind: .convertToJPEG, shortLabel: "JPG", label: String(localized: "Convert to JPG"))
+    static let convertToPNG = FileAction(kind: .convertToPNG, shortLabel: "PNG", label: String(localized: "Convert to PNG"))
+    static let removeGPS = FileAction(kind: .removeGPS, shortLabel: "GPS", symbol: "location.slash",
+                                      label: String(localized: "Copy without GPS location"))
+    static let videoToMP4 = FileAction(kind: .videoToMP4, shortLabel: "MP4", label: String(localized: "Convert to MP4"))
+    static let videoTo720p = FileAction(kind: .videoTo720p, shortLabel: "720p", label: String(localized: "Shrink to 720p"))
+    static let extractAudio = FileAction(kind: .extractAudio, shortLabel: "M4A", symbol: "waveform", label: String(localized: "Extract audio"))
+    static let newFolder = FileAction(kind: .newFolder, shortLabel: String(localized: "Folder"), symbol: "folder.badge.plus",
+                                      label: String(localized: "New folder"))
+    /// Les deux actions dont le libellé nomme l'élément visé, ici sans lui (pour le cadran des réglages).
+    public static let revealCopiedPath = FileAction(kind: .revealCopiedPath, shortLabel: String(localized: "Copied"),
+                                             symbol: "arrow.right.doc.on.clipboard", label: String(localized: "Show the copied path in Finder"))
+    static let goDown = FileAction(kind: .goDown, shortLabel: String(localized: "Down"), symbol: "arrow.down",
+                                   label: String(localized: "Back down"))
+
+    static func openTerminal(label: String) -> FileAction {
+        FileAction(kind: .openTerminal, shortLabel: String(localized: "Terminal"), symbol: "terminal", label: label)
+    }
+    static func openEditor(_ editor: String) -> FileAction {
+        FileAction(kind: .openEditor, shortLabel: String(localized: "Editor"), symbol: "chevron.left.forwardslash.chevron.right",
+                   label: String(localized: "Open in \(editor)"))
+    }
+    static func copyPath(label: String) -> FileAction {
+        FileAction(kind: .copyPath, shortLabel: String(localized: "Path"), symbol: "doc.on.clipboard", label: label)
+    }
 
     static func isHEIC(_ type: UTType) -> Bool { type.conforms(to: .heic) || type.conforms(to: .heif) }
 }

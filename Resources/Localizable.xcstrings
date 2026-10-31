@@ -51,6 +51,16 @@
         }
       }
     },
+    "%@, %lld o’clock": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, %lld h"
+          }
+        }
+      }
+    },
     "%lld failures": {
       "localizations": {
         "fr": {
@@ -238,6 +248,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Apps"
+          }
+        }
+      }
+    },
+    "Back down": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redescendre"
           }
         }
       }
@@ -492,6 +512,16 @@
         }
       }
     },
+    "Drag an action to its hour. The ring keeps these directions; when few actions apply, they spread out so they don’t crowd.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glisse une action sur son heure. L’anneau garde ces directions ; quand peu d’actions s’appliquent, elles s’écartent pour ne pas se tasser."
+          }
+        }
+      }
+    },
     "Editor": {
       "localizations": {
         "fr": {
@@ -528,6 +558,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Extraire l'audio"
+          }
+        }
+      }
+    },
+    "Files and folders": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fichiers et dossiers"
           }
         }
       }
@@ -762,6 +802,16 @@
         }
       }
     },
+    "Offer Paste (⌘V) in the ring": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Proposer Coller (⌘V) dans l’anneau"
+          }
+        }
+      }
+    },
     "Only to open the ring with the mouse (right-click hold, buttons).": {
       "localizations": {
         "fr": {
@@ -852,6 +902,26 @@
         }
       }
     },
+    "Paste": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coller"
+          }
+        }
+      }
+    },
+    "Paste (⌘V)": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coller (⌘V)"
+          }
+        }
+      }
+    },
     "Path": {
       "localizations": {
         "fr": {
@@ -898,6 +968,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Rose"
+          }
+        }
+      }
+    },
+    "Positions in the ring": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Positions dans l’anneau"
           }
         }
       }
@@ -1012,6 +1092,16 @@
         }
       }
     },
+    "Reset": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rétablir"
+          }
+        }
+      }
+    },
     "Return": {
       "comment": "Touche Entrée",
       "localizations": {
@@ -1099,6 +1189,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Raccourci à maintenir"
+          }
+        }
+      }
+    },
+    "Show the copied path in Finder": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afficher le chemin copié dans le Finder"
           }
         }
       }
