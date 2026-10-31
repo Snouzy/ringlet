@@ -28,7 +28,7 @@ private func text(_ label: String) -> FileAction {
     let texts = [text("Oui"), text("Tests"), text("Explique"), text("Stop")]
     let paste = SnippetCatalog.pasteAction
     let placed = RingHours.place([paste] + texts, hours: RingHours.textDefaults)
-    #expect(placed.map(\.hour) == [0, 1, 3, 6, 9])
+    #expect(placed.map(\.hour) == [0, 3, 5, 6, 9])
     #expect(placed[0].action.kind == .paste)
     #expect(placed.map(\.action.shortLabel).dropFirst() == ["Oui", "Tests", "Explique", "Stop"])   // l'ordre des réglages
     #expect(RingHours.place(texts, hours: [:]).map(\.hour) == [0, 3, 6, 9])
@@ -38,7 +38,7 @@ private func text(_ label: String) -> FileAction {
     let texts = [text("A"), text("B"), text("C")]
     let placed = RingHours.place(texts, hours: [texts[2].id: 0])
     #expect(placed.map(\.action.shortLabel) == ["C", "A", "B"])
-    #expect(placed.map(\.hour) == [0, 1, 6])
+    #expect(placed.map(\.hour) == [0, 3, 6])
 }
 
 @Test func layoutGivesTheRingItsAnglesAndEqualSectorsBeyondTwelve() {
@@ -79,4 +79,15 @@ private func text(_ label: String) -> FileAction {
         #expect(RingGeometry.normalized(next - spread[index]) >= gap - 0.01)
     }
     #expect(abs(spread[0] + 84) < 0.01)   // Remonter, poussé de 6° par la chaîne, reste en haut
+}
+
+@Test func aLooseTextGoesFarFromTheChosenHoursAndTheChainKeepsItsAnchor() {
+    // Le cas de Mathias : un texte à 12 h, Coller à 1 h, le chemin copié à 11 h, un second texte sans heure.
+    let a = TextSnippet(label: "OK, oui vas-y.", text: "OK, oui vas-y."), b = TextSnippet(label: "Tu peux commit et push", text: "Tu peux commit et push")
+    var actions = SnippetCatalog.actions(for: [a, b], paste: true)
+    actions.append(ActionCatalog.revealCopiedPath)
+    let hours = RingHours.textDefaults.merging([a.id.uuidString: 0, ActionKind.paste.rawValue: 1]) { $1 }
+    let laid = RingHours.layout(actions, hours: hours)
+    #expect(laid.actions.map(\.shortLabel) == ["OK, oui vas-y.", "Paste", "Tu peux commit et push", "Copied"])
+    #expect(laid.angles == [-90, -18, 90, 198])   // le texte choisi reste à midi, Coller et Copié s'écartent de 72°
 }

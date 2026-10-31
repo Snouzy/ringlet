@@ -24,8 +24,9 @@ public enum RingHours {
     public static let textDefaults: [String: Int] = [ActionKind.paste.rawValue: 0, ActionKind.revealCopiedPath.rawValue: 11]
 
     /// Les actions avec leur heure, dans le sens horaire. Une action à l'heure choisie ; deux à la même heure,
-    /// la seconde (dans l'ordre donné) prend l'heure libre suivante ; celles sans heure se répartissent sur les
-    /// heures restées libres, dans l'ordre donné. Au-delà de douze, les dernières sans heure sont laissées de côté.
+    /// la seconde (dans l'ordre donné) prend l'heure libre suivante ; celles sans heure vont chacune à l'heure la plus
+    /// éloignée de toutes les autres (puis des heures choisies), et se suivent dans l'ordre donné autour du cadran.
+    /// Au-delà de douze, les dernières sans heure sont laissées de côté.
     public static func place(_ actions: [FileAction], hours: [String: Int]) -> [(action: FileAction, hour: Int)] {
         var taken = Set<Int>(), placed: [(action: FileAction, hour: Int)] = [], bumped: [(FileAction, Int)] = []
         for action in actions {
@@ -39,10 +40,19 @@ public enum RingHours {
             guard taken.insert(hour).inserted else { continue }
             placed.append((action, hour))
         }
-        let free = (0..<count).filter { !taken.contains($0) }, loose = actions.filter { hours[$0.id] == nil }
-        for (index, action) in loose.enumerated() where index < free.count {
-            placed.append((action, free[index * free.count / loose.count]))
+        let pinned = taken
+        func distance(_ hour: Int, to set: Set<Int>) -> Int {
+            set.map { abs(hour - $0) }.map { min($0, count - $0) }.min() ?? count
         }
+        var chosen: [Int] = []
+        let loose = actions.filter { hours[$0.id] == nil }
+        for _ in loose where taken.count < count {
+            let free = (0..<count).filter { !taken.contains($0) }
+            let best = free.max { (distance($0, to: taken), distance($0, to: pinned), -$0) < (distance($1, to: taken), distance($1, to: pinned), -$1) }!
+            taken.insert(best)
+            chosen.append(best)
+        }
+        for (action, hour) in zip(loose, chosen.sorted()) { placed.append((action, hour)) }
         return placed.sorted { $0.hour < $1.hour }
     }
 
@@ -68,21 +78,29 @@ public enum RingHours {
         guard angles.count > 1 else { return angles }
         let gap = minimumGap(count: angles.count)
         let order = angles.indices.sorted { RingGeometry.normalized(angles[$0]) < RingGeometry.normalized(angles[$1]) }
-        var result = angles
-        for _ in 0..<200 {
+        // Positions « déroulées », croissantes le long du cercle : les écarts sont signés, une poussée ne peut pas
+        // faire passer une action de l'autre côté de sa voisine sans qu'on le voie.
+        var unrolled = [RingGeometry.normalized(angles[order[0]])]
+        for rank in 1..<order.count {
+            unrolled.append(unrolled[rank - 1] + RingGeometry.normalized(angles[order[rank]] - angles[order[rank - 1]]))
+        }
+        let initial = unrolled
+        for _ in 0..<400 {
             var moved = false
-            for (rank, index) in order.enumerated() {
-                let nextIndex = order[(rank + 1) % order.count]
-                let distance = RingGeometry.normalized(result[nextIndex] - result[index])
-                let deficit = gap - (distance == 0 && order.count > 1 ? 360 : distance)
+            for rank in order.indices {
+                let next = (rank + 1) % order.count
+                let distance = (next == 0 ? unrolled[0] + 360 : unrolled[next]) - unrolled[rank]
+                let deficit = gap - distance
                 guard deficit > 0.001 else { continue }
-                result[index] -= deficit / 2
-                result[nextIndex] += deficit / 2
+                unrolled[rank] -= deficit / 2
+                unrolled[next] += deficit / 2
                 moved = true
             }
             if !moved { break }
         }
-        return result.map { ($0 * 100).rounded() / 100 }
+        var result = angles
+        for (rank, index) in order.enumerated() { result[index] = ((angles[index] + unrolled[rank] - initial[rank]) * 100).rounded() / 100 }
+        return result
     }
 
     /// L'anneau prêt à afficher : ses actions dans le sens horaire et sa géométrie.
